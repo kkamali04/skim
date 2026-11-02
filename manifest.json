@@ -1,0 +1,34 @@
+{
+  "name": "Skim",
+  "version": "1.2.0",
+  "manifest_version": 3,
+  "description": "Capture page text, code and YouTube transcripts. Review and redact full-page screenshots before copying or downloading.",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icon48.png"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+P"
+      }
+    }
+  },
+  "permissions": [ "activeTab", "storage", "unlimitedStorage", "clipboardWrite", "scripting" ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "https://openrouter.ai/*",
+    "https://api.z.ai/*",
+    "https://api.moonshot.cn/*",
+    "https://api.moonshot.ai/*",
+    "http://127.0.0.1:8766/*"
+  ],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

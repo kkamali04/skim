@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>Skim</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+
+<!-- ═══ HEADER (always visible) ═══════════════════════════ -->
+<div class="app-header">
+  <div class="logo">
+    <div class="logo-box"><svg aria-hidden="true"><use href="assets/icons.svg#scan-text"></use></svg></div>
+    <span class="logo-name">Skim</span>
+  </div>
+  <div class="header-right">
+    <span class="badge badge-work" role="status" id="state-badge">Working</span>
+    <button class="icon-btn" id="btn-nav-history" aria-label="Capture history" title="History">
+      <svg aria-hidden="true"><use href="assets/icons.svg#history"></use></svg>
+    </button>
+    <button class="icon-btn" id="btn-nav-settings" aria-label="Settings" title="Settings">
+      <svg aria-hidden="true"><use href="assets/icons.svg#settings-2"></use></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ═══ LOADING ══════════════════════════════════════════ -->
+<div id="youtube-controls" class="body" style="display:none">
+  <button class="btn btn-surface" id="btn-youtube-alternate">Skim page normally</button>
+</div>
+<div id="loading" class="panel">
+  <div class="body">
+    <div class="eyebrow">Your page, ready to share</div>
+    <div class="progress-text" role="status" id="progress-label">Extracting text…</div>
+    <div class="track"><div class="fill pulse" id="bar"></div></div>
+    <div class="split-note" id="split-image">Page split into multiple parts. Review and export each part.</div>
+  </div>
+</div>
+
+<!-- ═══ RESULT ═══════════════════════════════════════════ -->
+<div id="result" class="panel">
+  <div class="body">
+    <div class="card">
+      <div style="min-width:0">
+        <div class="card-label" id="result-label">Text copied</div>
+        <div class="card-sub" id="result-sub"></div>
+      </div>
+      <div class="card-meta" id="result-meta"></div>
+    </div>
+    <details id="preview-details"><summary><svg aria-hidden="true"><use href="assets/icons.svg#chevron-down"></use></svg>Preview captured text</summary><textarea id="text-preview" class="s-input mono" readonly aria-label="Full captured text" spellcheck="false"></textarea></details>
+    <div class="button-row"><button class="btn btn-primary" id="btn-recopy"><svg aria-hidden="true"><use href="assets/icons.svg#copy"></use></svg>Copy again</button><button class="btn btn-surface" id="btn-download-text"><svg aria-hidden="true"><use href="assets/icons.svg#download"></use></svg>Save text</button></div>
+    <div id="text-status" role="status"></div>
+    <button class="btn btn-surface" id="btn-action2">
+      <span id="btn-action2-icon" aria-hidden="true"><svg aria-hidden="true"><use href="assets/icons.svg#camera"></use></svg></span>
+      <span id="btn-action2-text">Take Screenshot</span>
+    </button>
+<button class="btn btn-ghost" id="btn-close">Dismiss</button>
+  </div>
+</div>
+
+<!-- ═══ CACHED ════════════════════════════════════════════ -->
+<div id="review" class="panel">
+  <div class="body">
+    <div class="eyebrow">Before you share</div><h1>Review screenshot</h1>
+    <div class="s-hint">Review before sharing. Text masks are best-effort; images are not OCR-scanned. Drag to mask private areas. Nested pages capture the main scroll pane; floating overlays are omitted.</div>
+    <label>Part <select id="review-part" aria-label="Screenshot part"></select></label>
+    <div class="review-viewport">
+      <canvas id="review-canvas" aria-label="Screenshot masking canvas" style="display:block;width:100%;touch-action:none;cursor:crosshair"></canvas>
+    </div>
+    <div id="review-status" role="status"></div>
+    <details><summary><svg aria-hidden="true"><use href="assets/icons.svg#chevron-down"></use></svg>Add a mask by coordinates</summary><div class="s-hint">Pixel coordinates in this part. Use the fields or drag on the image.</div><form id="mask-form"><div class="mask-fields"><label>X<input class="s-input" id="mask-x" type="number" min="0" step="1" value="0" required></label><label>Y<input class="s-input" id="mask-y" type="number" min="0" step="1" value="0" required></label><label>Width<input class="s-input" id="mask-width" type="number" min="1" step="1" value="100" required></label><label>Height<input class="s-input" id="mask-height" type="number" min="1" step="1" value="100" required></label></div><button class="btn btn-surface" type="submit"><svg aria-hidden="true"><use href="assets/icons.svg#square"></use></svg>Add opaque mask</button></form></details>
+    <button class="btn btn-surface" id="review-undo"><svg aria-hidden="true"><use href="assets/icons.svg#undo-2"></use></svg>Undo mask</button>
+    <button class="btn btn-primary" id="review-copy"><svg aria-hidden="true"><use href="assets/icons.svg#copy"></use></svg>Copy reviewed part</button>
+    <button class="btn btn-surface" id="review-download"><svg aria-hidden="true"><use href="assets/icons.svg#download"></use></svg>Save this part · PNG</button><button class="btn btn-surface" id="review-download-all"><svg aria-hidden="true"><use href="assets/icons.svg#download"></use></svg><span id="review-all-label">Save all reviewed parts · ZIP</span></button>
+    <button class="btn btn-ghost" id="review-cancel">Cancel</button>
+  </div>
+</div>
+<!-- ═══ HISTORY ═══════════════════════════════════════════ -->
+<div id="history" class="panel">
+  <div class="body" id="history-list">
+    <div class="h-empty" id="history-empty">No captures yet</div>
+  </div>
+  <div class="h-footer">
+    <button class="btn btn-ghost" id="btn-history-back" style="font-size:11px;padding:5px 0;width:auto"><svg aria-hidden="true"><use href="assets/icons.svg#arrow-left"></use></svg>Back</button>
+    <button class="btn btn-danger" id="btn-clear-history" style="width:auto">Clear all</button>
+  </div>
+</div>
+
+<!-- ═══ SETTINGS ══════════════════════════════════════════ -->
+<div id="settings" class="panel"><div class="body"><h1>Settings</h1>
+<section class="sec"><h2 class="sec-title">Appearance</h2><div class="s-row"><div><label class="s-name" for="set-theme">Theme</label></div><select class="s-select" id="set-theme"><option value="dark">Dark</option><option value="light">Light</option><option value="system">System</option></select></div></section>
+<section class="sec"><h2 class="sec-title">Capture</h2>
+<div class="s-row"><div><label class="s-name" for="set-default-action">On open</label><div class="s-hint">Start a fresh capture</div></div><select class="s-select" id="set-default-action"><option value="text">Copy text</option><option value="screenshot">Screenshot</option></select></div>
+<div class="s-row"><div><label class="s-name" for="set-copy-mode">Copy mode</label><div class="s-hint">Text or UI markup + CSS</div></div><select class="s-select" id="set-copy-mode"><option value="text">Text</option><option value="code">Code</option></select></div>
+<div class="s-row"><div><label class="s-name" for="set-youtube-transcript">YouTube transcripts</label><div class="s-hint">Try the native transcript on video pages</div></div><label class="toggle"><input type="checkbox" id="set-youtube-transcript" aria-label="YouTube transcripts"><span class="t-track"></span></label></div>
+<div class="s-row"><div><label class="s-name" for="set-capture-delay">Capture speed</label><div class="s-hint">Allow more time for page rendering</div></div><select class="s-select" id="set-capture-delay"><option value="150">Fast · 150ms</option><option value="300">Normal · 300ms</option><option value="500">Safe · 500ms</option><option value="800">Careful · 800ms</option></select></div></section>
+<section class="sec"><h2 class="sec-title">Privacy &amp; history</h2>
+<div class="s-row"><div><label class="s-name" for="set-autoredact">Auto-redact sensitive text</label><div class="s-hint">Best-effort masks for keys, SSNs, emails and cards. Review before sharing.</div></div><label class="toggle"><input type="checkbox" id="set-autoredact" aria-label="Auto-redact sensitive text"><span class="t-track"></span></label></div>
+<div class="s-row"><div><label class="s-name" for="set-history-enabled">Save history</label><div class="s-hint">Text is stored locally; saved entries over 100k characters are truncated.</div></div><label class="toggle"><input type="checkbox" id="set-history-enabled" aria-label="Save history"><span class="t-track"></span></label></div></section>
+<details class="sec-collapsible"><summary><svg aria-hidden="true"><use href="assets/icons.svg#chevron-down"></use></svg>AI summarization</summary>
+<div class="s-row"><div><label class="s-name" for="set-summary-enabled">Summarize page text with AI</label><div class="s-hint">Off: capture locally. On: send captured text to your provider; API charges may apply. Text mode only.</div></div><label class="toggle"><input type="checkbox" id="set-summary-enabled" aria-label="Summarize page text with AI"><span class="t-track"></span></label></div>
+<div class="s-row"><div><label class="s-name" for="set-summary-provider">Provider</label><div class="s-hint">Changing destination clears the saved key</div></div><select class="s-select" id="set-summary-provider"><option value="zai">Z.ai</option><option value="moonshot">Moonshot</option><option value="openrouter">OpenRouter</option><option value="custom">Custom</option></select></div>
+<div class="s-row s-row-stack"><div class="s-label"><label class="s-name" for="set-summary-base">Base URL</label><div class="s-hint">HTTPS OpenAI-compatible root, without /chat/completions</div></div><input type="text" id="set-summary-base" class="s-input" autocomplete="off" spellcheck="false"></div>
+<div class="s-row s-row-stack"><div class="s-label"><label class="s-name" for="set-summary-model">Model</label><div class="s-hint" id="summary-provider-hint">Check availability with your provider</div></div><input type="text" id="set-summary-model" class="s-input" autocomplete="off" spellcheck="false"></div>
+<div class="s-row s-row-stack"><div class="s-label"><label class="s-name" for="set-summary-key">API key</label><div class="s-hint">Stored in this Chrome profile, without encryption. Never synced.</div></div><input type="password" id="set-summary-key" class="s-input" autocomplete="off" spellcheck="false"></div>
+<button class="btn btn-surface" id="btn-test-summary" title="Sends a small test prompt; API charges may apply"><svg aria-hidden="true"><use href="assets/icons.svg#check"></use></svg>Test provider</button>
+<div id="summary-test-status" class="s-hint" role="status"></div>
+<details><summary><svg aria-hidden="true"><use href="assets/icons.svg#chevron-down"></use></svg>Optional local vault bridge</summary><p class="s-hint">Requires a separately configured cogent-rest service at 127.0.0.1:8766. It is not included with Skim.</p><button class="btn btn-surface" id="btn-load-crypt">Load key from local vault</button></details>
+</details>
+<details class="sec-collapsible"><summary><svg aria-hidden="true"><use href="assets/icons.svg#chevron-down"></use></svg>Advanced extraction</summary>
+<div class="s-row"><div><label class="s-name" for="set-include-buttons">Include buttons</label><div class="s-hint">List clickable actions in the form section</div></div><label class="toggle"><input type="checkbox" id="set-include-buttons" aria-label="Include buttons"><span class="t-track"></span></label></div>
+<div class="s-row"><div><label class="s-name" for="set-extract-iframes">Permitted iframes</label><div class="s-hint">Other origins may be inaccessible; exports report coverage.</div></div><label class="toggle"><input type="checkbox" id="set-extract-iframes" aria-label="Permitted iframes"><span class="t-track"></span></label></div>
+<div class="s-row"><div><label class="s-name" for="set-extract-shadow">Open shadow DOM</label><div class="s-hint">Read accessible custom-element content</div></div><label class="toggle"><input type="checkbox" id="set-extract-shadow" aria-label="Open shadow DOM"><span class="t-track"></span></label></div>
+<div class="s-row"><div><label class="s-name" for="set-probe-dropdowns">Probe dropdowns</label><div class="s-hint">May open menus to discover options; adds up to 5 seconds</div></div><label class="toggle"><input type="checkbox" id="set-probe-dropdowns" aria-label="Probe dropdowns"><span class="t-track"></span></label></div>
+</details>
+<details class="sec-collapsible"><summary><svg aria-hidden="true"><use href="assets/icons.svg#chevron-down"></use></svg>Capture profile · JSON</summary>
+<div class="s-name">Active: <span id="profile-active-label">Default</span></div><p class="s-hint">Apply a reusable configuration for future captures.</p>
+<textarea id="set-profile-json" aria-label="Capture profile JSON" rows="4" class="s-input mono" placeholder='{"_profile":"research","autoRedact":true}'></textarea>
+<div class="button-row"><button class="btn btn-surface" id="btn-apply-profile">Apply profile</button><button class="btn btn-ghost" id="btn-reset-profile">Reset</button></div><div id="profile-status" class="s-hint" role="status"></div>
+</details>
+<button class="btn btn-ghost" id="btn-settings-back"><svg aria-hidden="true"><use href="assets/icons.svg#arrow-left"></use></svg>Back to capture</button>
+</div></div>
+
+<!-- ═══ ERROR ════════════════════════════════════════════ -->
+<div id="error-panel" class="panel">
+  <div class="err-body">
+    <div class="err-msg" id="error-msg">Capture failed.</div>
+    <div class="err-hint">Keep this popup open during capture. Some pages restrict access; try the normal-page option for unavailable transcripts.</div>
+    <button class="btn btn-surface" id="btn-retry">
+      <svg aria-hidden="true"><use href="assets/icons.svg#rotate-ccw"></use></svg>
+      Try Again
+    </button>
+    <button class="btn btn-ghost" id="btn-error-close">Dismiss</button>
+  </div>
+</div>
+
+<!-- ═══ INVALID ═══════════════════════════════════════════ -->
+<div id="invalid" class="panel">
+  <div class="err-body">
+    <div class="err-msg">Cannot capture this type of URL.</div>
+    <button class="btn btn-ghost" id="btn-invalid-close">Dismiss</button>
+  </div>
+</div>
+
+<div class="local-footer" id="privacy-state"><svg aria-hidden="true"><use href="assets/icons.svg#shield-check"></use></svg><span id="privacy-state-text">Local capture · AI off</span></div>
+<script src="exports.js"></script>
+<script src="privacy.js"></script>
+<script src="api.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>
