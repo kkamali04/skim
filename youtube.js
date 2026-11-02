@@ -4,7 +4,7 @@ async function skimYouTubeTranscript() {
         !(url.pathname === '/watch' && url.searchParams.has('v') || /^\/(shorts|live)\//.test(url.pathname)))
         return {error:'Open a YouTube video to capture its transcript.'};
     var sleep = function(ms) {return new Promise(function(r){setTimeout(r,ms);});};
-    var selector = 'ytd-transcript-segment-renderer, yt-transcript-segment-view-model';
+    var selector = 'ytd-transcript-segment-renderer, yt-transcript-segment-view-model, transcript-segment-view-model';
     var segments = function(){return Array.from(document.querySelectorAll(selector)).filter(function(el){return el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden';});};
     try {
         if (!segments().length) {
@@ -26,8 +26,8 @@ async function skimYouTubeTranscript() {
             for (var step=0;step<400;step++) {
                 await sleep(150);
                 segments().forEach(function(el){
-                    var timeEl = el.querySelector('.segment-timestamp, .yt-transcript-segment-view-model__timestamp');
-                    var textEl = el.querySelector('.segment-text, .yt-transcript-segment-view-model__text');
+                    var timeEl = el.querySelector('.segment-timestamp, .yt-transcript-segment-view-model__timestamp, .ytwTranscriptSegmentViewModelTimestamp');
+                    var textEl = el.querySelector('.segment-text, .yt-transcript-segment-view-model__text, .ytAttributedStringHost');
                     var stamp = timeEl && timeEl.textContent.trim();
                     var text = textEl && textEl.textContent.replace(/\s+/g,' ').trim();
                     if (!stamp || !text || !/^\d+(?::\d{2}){1,2}$/.test(stamp)) {missing++;return;}

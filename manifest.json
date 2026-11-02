@@ -1,6 +1,6 @@
 {
   "name": "Skim",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "manifest_version": 3,
   "description": "Capture page text, code and YouTube transcripts. Review and redact full-page screenshots before copying or downloading.",
   "background": {
@@ -17,7 +17,13 @@
       }
     }
   },
-  "permissions": [ "activeTab", "storage", "unlimitedStorage", "clipboardWrite", "scripting" ],
+  "permissions": [
+    "activeTab",
+    "storage",
+    "unlimitedStorage",
+    "clipboardWrite",
+    "scripting"
+  ],
   "optional_host_permissions": [
     "https://*/*",
     "https://openrouter.ai/*",

@@ -568,7 +568,10 @@ function drawReviewedPart(part, canvas) {
   var ctx = canvas.getContext('2d');
   ctx.drawImage(part.image,0,0);
   ctx.fillStyle = '#000';
-  part.masks.forEach(function(m) {ctx.fillRect(m.x,m.y,m.w,m.h);});
+  part.masks.forEach(function(m) {
+    var x = Math.floor(m.x), y = Math.floor(m.y);
+    ctx.fillRect(x,y,Math.ceil(m.x+m.w)-x,Math.ceil(m.y+m.h)-y);
+  });
 }
 function reviewPoint(e) {
   var c=$('review-canvas'), r=c.getBoundingClientRect();

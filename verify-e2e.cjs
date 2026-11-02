@@ -26,6 +26,7 @@ const fixture=`<html><head><title>Skim fixture</title></head><body><main><h1>Job
 <p>alice@example.com</p><input aria-label="API key" value="fixture-private-secret"><iframe src="/frame"></iframe><div id="shadow"></div></main><script>document.querySelector('#shadow').attachShadow({mode:'open'}).innerHTML='<p>Shadow content</p><a href="/shadow-job">Shadow job</a>';</script></body></html>`;
 const screenshotFixture=`<style>body{margin:0;overflow:hidden}header{height:60px;background:red}main{position:absolute;top:80px;left:100px;width:650px;height:500px;overflow:auto}.row{height:200px;box-sizing:border-box;background:rgb(20,120,60)}.row:nth-child(even){background:rgb(30,70,180)}</style><header>Stationary header</header><main>${Array.from({length:8},(_,i)=>`<div class="row">Row ${i}<input value="private-field-${i}"></div>`).join('')}</main><script>document.querySelector('main').addEventListener('scroll',()=>{if(!document.querySelector('#lazy')&&document.querySelector('main').scrollTop>300){const p=document.createElement('span');p.id='lazy';p.textContent='lazy@example.com';document.querySelectorAll('.row')[5].append(p);}});</script>`;
 const youtubeFixture=`<h1 class="ytd-watch-metadata">Transcript fixture</h1><div id="owner"><ytd-channel-name><a>Fixture channel</a></ytd-channel-name></div><ytd-video-description-transcript-section-renderer><button onclick="document.querySelector('#segments').hidden=false">Show transcript</button></ytd-video-description-transcript-section-renderer><ytd-transcript-renderer><div id="footer"><button>English (auto-generated)</button></div><div id="segments" hidden style="height:200px;overflow:auto">${Array.from({length:25},(_,i)=>`<ytd-transcript-segment-renderer style="display:block;height:40px"><span class="segment-timestamp">0:${String(i).padStart(2,'0')}</span><span class="segment-text">Transcript sentence ${i}</span></ytd-transcript-segment-renderer>`).join('')}</div></ytd-transcript-renderer>`;
+const currentYouTubeFixture=youtubeFixture.replaceAll('ytd-transcript-segment-renderer','transcript-segment-view-model').replaceAll('segment-timestamp','ytwTranscriptSegmentViewModelTimestamp').replaceAll('segment-text','ytAttributedStringHost');
 const fullPageFixture=`<style>body{margin:0;width:1200px}.stripe{height:200px;background:rgb(20,120,60)}.stripe:nth-child(even){background:rgb(30,70,180)}#floating{position:fixed;inset:0;height:50px;background:red}</style><div>${Array.from({length:45},(_,i)=>`<div class="stripe">${i===40?'<input value="boundary-private-field">':''}</div>`).join('')}</div><div id="floating">Floating overlay</div>`;
 const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/html');res.end(req.url==='/frame'?'<p>frame@example.com</p><input aria-label="secret token" value="frame-secret-value"><label for="credential">API key</label><input id="credential" value="synthetic-labelled-secret">':req.url==='/shot'?screenshotFixture:req.url==='/full'?fullPageFixture:fixture);});
 let context;
@@ -226,7 +227,7 @@ let context;
  await p.locator('#review-part').selectOption('1');
  assert.deepEqual(await p.evaluate(()=>Array.from(document.querySelector('#review-canvas').getContext('2d').getImageData(10,10,1,1).data)),[0,0,255,255]);
  await p.locator('#review-copy').click();await p.getByText('Copied part 2 of 2',{exact:true}).waitFor();
- await p.evaluate(()=>{reviewParts[0].masks.push({x:0,y:0,w:20,h:20});reviewParts[1].masks.push({x:0,y:0,w:20,h:20});renderReview();});
+ await p.evaluate(()=>{reviewParts[0].masks.push({x:0.5,y:0.5,w:19,h:19});reviewParts[1].masks.push({x:0.5,y:0.5,w:19,h:19});renderReview();});
  const zipEvent=p.waitForEvent('download');await p.locator('#review-download-all').click();
  const zipDownload=await zipEvent,zipBytes=fs.readFileSync(await zipDownload.path());
  let zipOffset=0,zipCount=0;const zipPNGs=[];
@@ -238,9 +239,9 @@ let context;
  }
  assert.equal(zipCount,2,'ZIP contains every part');
  const zipMasks=await p.evaluate(async pngs=>{
-   const values=[];for(const png of pngs){const b=await(await fetch('data:image/png;base64,'+png)).blob(),image=await createImageBitmap(b),c=document.createElement('canvas');c.width=40;c.height=40;const ctx=c.getContext('2d');ctx.drawImage(image,0,0);values.push(Array.from(ctx.getImageData(10,10,1,1).data));image.close();}return values;
+   const values=[];for(const png of pngs){const b=await(await fetch('data:image/png;base64,'+png)).blob(),image=await createImageBitmap(b),c=document.createElement('canvas');c.width=40;c.height=40;const ctx=c.getContext('2d');ctx.drawImage(image,0,0);values.push({center:Array.from(ctx.getImageData(10,10,1,1).data),edge:Array.from(ctx.getImageData(0,0,1,1).data)});image.close();}return values;
  },zipPNGs);
- assert.deepEqual(zipMasks,[[0,0,0,255],[0,0,0,255]],'All exported PNGs retain their individual review masks');
+ assert.deepEqual(zipMasks,[{center:[0,0,0,255],edge:[0,0,0,255]},{center:[0,0,0,255],edge:[0,0,0,255]}],'Fractional mask bounds must cover every intersecting pixel opaquely in all exported PNGs');
  assert.equal(await p.locator('#review-part').inputValue(),'1','Export does not change selected part');
  await p.screenshot({path:path.join(OUT,'screenshot-review.png')});await p.close();
  console.log('PASS native screenshot capture: nested stitching pixel rows, input masks, manual mask/undo, explicit copy');
@@ -269,7 +270,7 @@ let context;
  await p.close();
  console.log('PASS native ordinary full-page capture: horizontal overflow, actual canvas splits, seam pixels, overlay and scroll restoration');
 
- await context.route('https://www.youtube.com/**',route=>route.fulfill({contentType:'text/html',body:route.request().url().includes('v=missing')?'<h1>No transcript fixture</h1>':youtubeFixture}));
+ await context.route('https://www.youtube.com/**',route=>route.fulfill({contentType:'text/html',body:route.request().url().includes('v=missing')?'<h1>No transcript fixture</h1>':route.request().url().includes('v=current')?currentYouTubeFixture:youtubeFixture}));
  await page.goto('https://www.youtube.com/watch?v=fixture');
  // Refresh the test's target URL for the popup router without changing the target tab id.
  p=await popup();
@@ -284,6 +285,12 @@ let context;
  assert.ok(result[0].result.text.includes('CAPTION TYPE: automatic'));
  await p.screenshot({path:path.join(OUT,'youtube-result.png')});await p.close();
  console.log('PASS native YouTube DOM fixture: opening transcript, scrolling, timestamp records, toggle and alternate action');
+ await page.goto('https://www.youtube.com/watch?v=current');p=await popup();
+ await p.getByText('Transcript copied',{exact:true}).waitFor({timeout:30000});
+ const currentTranscript=await p.evaluate(()=>navigator.clipboard.readText());
+ assert.ok(currentTranscript.includes('[0:24](https://www.youtube.com/watch?v=current&t=24s) Transcript sentence 24'));
+ assert.equal((currentTranscript.match(/^\[/gm)||[]).length,25);
+ await p.close();console.log('PASS native transcript clipboard export with the currently observed YouTube view-model layout');
  await page.goto('https://www.youtube.com/watch?v=missing');
  p=await popup();await p.locator('#error-panel').waitFor({state:'visible'});
  assert.match(await p.locator('#error-msg').innerText(),/Transcript control not available/);

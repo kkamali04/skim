@@ -1,5 +1,14 @@
 # Changes
 
+## 1.2.1 — release candidate
+
+- Fix live YouTube extraction for the current native transcript view-model and its timestamp/text classes; retain both older layouts.
+- Add layout regressions, native extension clipboard coverage for the current layout and successful live DOM verification.
+- Add exact-production-manifest permission tests with no host grants, proving capture and provider requests are denied before permission.
+- Round manual masks outward to whole pixels so fractional drag edges remain fully opaque in preview, clipboard, PNG and ZIP exports.
+- Activate GitHub Actions tests/packaging and keep live network diagnostics separate from deterministic CI.
+
+
 ## 1.2.0
 
 - Fixed 400 × 600 purple light/dark popup, consistent local Lucide SVG controls, bundled Manrope, visible keyboard focus and 20px content padding.

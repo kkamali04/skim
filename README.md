@@ -4,6 +4,8 @@ Capture web context. Review what you share.
 
 Skim is a local-first Chrome extension for copying page text, UI code and available YouTube transcripts, or reviewing full-page screenshots before export. No account, build step or AI provider is required.
 
+[![Test and package](https://github.com/kkamali04/skim/actions/workflows/test.yml/badge.svg)](https://github.com/kkamali04/skim/actions/workflows/test.yml)
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/popup-dark.png">
   <img src="docs/images/popup-light.png" width="400" alt="Skim's fixed-size purple popup with text preview, copy, save and screenshot controls">
@@ -48,7 +50,7 @@ Changing provider/base URL clears the saved key and turns AI off. If summarizati
 - Chrome restricts internal pages, its Web Store and some documents. Cross-origin frames, closed shadow roots, canvas/video and inaccessible stylesheets may be unavailable.
 - Infinite, virtualized, animated and changing layouts can yield incomplete captures. Large screenshots split into parts; nested layouts capture the main scroll pane and may omit floating overlays.
 - Exported text reports coverage and truncation. Redaction recognizes common patterns, not every possible secret. Review before sharing.
-- **Live YouTube is not fully verified.** On November 2, 2026, native transcript loading returned HTTP 400 in a regular Chrome profile. Skim reports failure instead of silently substituting page text. The automated transcript tests use a controlled fixture.
+- **YouTube depends on native transcript availability.** Skim supports the current and legacy transcript layouts. On November 2, 2026, the current layout was verified on a live public video (110 segments, 0:07–15:01). Some videos/profiles still return HTTP 400 or show site-access/ad-blocker restrictions; Skim reports failure instead of bypassing those restrictions or silently substituting page text.
 - Automated browser tests use an isolated unpacked extension. Actual installed-toolbar gestures and provider permission prompts still require verification in the user's profile. See [Testing](TESTING.md) for exact evidence boundaries.
 
 ## Develop
@@ -62,7 +64,7 @@ npm test
 npm run package
 ```
 
-The package command creates `dist/skim-1.2.0.zip` from an explicit runtime-file list. Tests never need a real provider key. A ready-to-enable GitHub Actions workflow is in [docs/ci/test.yml.example](docs/ci/test.yml.example). Move it to `.github/workflows/test.yml` using credentials with GitHub `workflow` scope to activate CI; it is not active yet.
+The package command creates `dist/skim-1.2.1.zip` from an explicit runtime-file list. Tests never need a real provider key. GitHub Actions runs the deterministic suite and packages the extension on pushes and pull requests. See [the workflow](.github/workflows/test.yml).
 
 See [Contributing](CONTRIBUTING.md), [Testing](TESTING.md), [Privacy](PRIVACY.md), [Security](SECURITY.md) and [Changes](CHANGES.md).
 
