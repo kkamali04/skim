@@ -22,7 +22,7 @@ No production API key is required. The provider tests use synthetic responses. `
 | `verify-capture.cjs` | Browser scroll orchestration, nested crop, restoration and failed-tile handling with simulated tile messages. |
 | `verify-youtube.cjs` | Legacy renderer, earlier view-model and current native view-model layouts: timestamp links, every fixture segment and scroll restoration. |
 | `verify-permissions.cjs` | Exact production manifest in a fresh Chrome profile: native popup registration; no installed host/clipboard-read grants; scripting, screenshot and provider network access denied without permission. |
-| `verify-e2e.cjs` | An isolated unpacked Chromium extension exercising actual scripting, capture, storage, PNG clipboard and downloads. Pixel checks cover nested stitching, ordinary horizontal overflow, part seams, input masks and manually reviewed masks. Full text downloads and all-part ZIPs are read back. Keyboard controls and the fixed 400 × 600 popup are checked. |
+| `verify-e2e.cjs` | An isolated unpacked Chromium extension exercising actual scripting, capture, storage, PNG clipboard and downloads. Pixel checks cover nested stitching, ordinary horizontal overflow, part seams, input masks and manually reviewed masks. Full text downloads and all-part ZIPs are read back. Keyboard controls and the fixed 460 × 500 popup are checked. |
 
 E2E fixtures also cover native transcript controls, scrolling, timestamp records and failure without clipboard replacement. They are controlled DOM fixtures, not live YouTube acceptance.
 

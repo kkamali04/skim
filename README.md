@@ -8,7 +8,7 @@ Skim is a local-first Chrome extension for copying page text, UI code and availa
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/popup-dark.png">
-  <img src="docs/images/popup-light.png" width="400" alt="Skim's fixed-size purple popup with text preview, copy, save and screenshot controls">
+  <img src="docs/images/popup-light.png" width="460" alt="Skim's fixed-size purple popup with text preview, copy, save and screenshot controls">
 </picture>
 
 ## What it does
@@ -18,7 +18,7 @@ Skim is a local-first Chrome extension for copying page text, UI code and availa
 - **Reviewed screenshots:** stitch full pages or a main scroll pane, add opaque masks by dragging or keyboard coordinates, undo masks, then explicitly copy or save.
 - **Complete captured-output export:** preview and save the current text without the history preview cap; save one PNG or a ZIP containing every reviewed screenshot part.
 - **YouTube transcripts:** read the native transcript when YouTube makes it available, preserving timestamps and links. Live-site limitations are documented below.
-- **Comfortable controls:** consistent local SVGs, purple light/dark themes, keyboard-accessible history and a fixed 400 × 600 frame with internal scrolling.
+- **Comfortable controls:** consistent local SVGs, purple light/dark themes, keyboard-accessible history and a fixed 460 × 500 frame with internal scrolling.
 
 ## Install
 
