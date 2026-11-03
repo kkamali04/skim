@@ -2,6 +2,11 @@
 
 ## 1.2.1 — release candidate
 
+- Retain distinct controls with shared names, visible alerts/validation messages, and current open-shadow form values with shadow-local sensitive-label protection.
+- Keep empty contact labels intact without weakening next-line credential redaction. Skip invisible overlay content and respect clipping ancestors when computing screenshot masks.
+- Close probed portal menus through the focused listbox so React menus do not remain open after capture.
+- Preserve sticky containers as containing blocks during screenshot stitching so positioned children and their masks stay in place.
+- Add an opt-in ten-website native-popup acceptance suite with actual clipboard readback, independent screenshot comparisons and source hashes.
 - Copy the complete screenshot automatically after capture, including multipart layouts within the combined image budget. Keep masking, full-image recopy, per-part copy and manual downloads. Oversized image failures preserve the previous clipboard.
 - Make captures clipboard-only by default with no screenshot cache or automatic files. Reset the prior default-on text history policy; optional text history expires after 14 days using a local cleanup alarm.
 - Read ARIA combobox choices without requiring aria-haspopup, support legacy keyboard handlers, and report unavailable options. Include aria-labelledby textareas and up to 12,000 characters of their redacted values with explicit truncation.

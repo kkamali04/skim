@@ -39,6 +39,14 @@ const assert = require('node:assert/strict');
   const full=await page.evaluate(()=>new Promise(resolve=>getPositions(resolve)));
   assert.equal(full.ok,true);
   assert.deepEqual(await page.evaluate(()=>({x:scrollX,y:scrollY,style:document.querySelector('#floating').style.cssText})),{x:170,y:230,style:''});
+  await page.setContent('<style>body{margin:0;height:1200px}.spacer{height:100px}aside{position:sticky;top:50px;width:200px;height:100px}aside input{position:absolute;top:10px;left:12px}</style><div class="spacer"></div><aside><input value="private field"></aside>');
+  await page.evaluate(()=>{scrollTo({top:0,behavior:'instant'});window.stickyFrames=[];window.stickyOriginal=document.querySelector('input').getBoundingClientRect().toJSON();chrome.runtime.sendMessage=(data,cb)=>{stickyFrames.push({...data,field:document.querySelector('input').getBoundingClientRect().toJSON()});cb({ok:true});};});
+  assert.equal((await page.evaluate(()=>new Promise(resolve=>getPositions(resolve)))).ok,true);
+  const sticky=await page.evaluate(()=>({original:stickyOriginal,first:stickyFrames[0],style:document.querySelector('aside').getAttribute('style')}));
+  assert.equal(sticky.first.field.x,sticky.original.x,'Sticky elements remain containing blocks for positioned children');
+  assert.equal(sticky.first.field.y,sticky.original.y,'Removing sticky behavior must not move a child field into the header');
+  assert.equal(sticky.style||'','','Remove temporary sticky styles');
+  assert.deepEqual(await page.locator('aside').evaluate(el=>({position:getComputedStyle(el).position,top:getComputedStyle(el).top})),{position:'sticky',top:'50px'},'Restore original sticky behavior and offsets');
   console.log('PASS: nested-pane crop, full height, completion and scroll restoration');
   console.log('PASS: failed tile reports failure and restores scroll position');
  } finally { await browser.close(); }

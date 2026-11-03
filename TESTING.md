@@ -11,6 +11,27 @@ npm run package
 
 No production API key is required. The provider tests use synthetic responses. `npm run test:youtube-live` is a separate network diagnostic and can fail because of YouTube's current response; it is not part of deterministic CI.
 
+## Live website acceptance
+
+Run `npm run test:sites-live` separately from CI. To repeat individual cases, use `node verify-sites.cjs mdn httpbin`, or add `--headed` for a visible disposable browser. The tests use current public websites without routing fixtures, signing in or submitting forms.
+
+| Website | Coverage |
+| --- | --- |
+| [Example Domain](https://example.com/) | Simple multilingual text and image baseline. |
+| [MDN Clipboard API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/writeText) | Documentation, code, sticky headers/sidebar, positioned child fields. |
+| [Wikipedia clipboard article](https://en.wikipedia.org/wiki/Clipboard_(computing)) | Long article, references, links and multipart PNG assembly. |
+| [Hacker News](https://news.ycombinator.com/news) | Every current story title and destination URL. |
+| [Books to Scrape product](https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html) | Product description, price/stock table, image and visible warning. |
+| [HTTPBin form](https://httpbin.org/forms/post) | Synthetic field values, selected radio/checkbox groups, email redaction; never submitted. |
+| [Playwright on GitHub](https://github.com/microsoft/playwright) | Repository listing, README code, long text and multipart image. |
+| [MUI Select examples](https://mui.com/material-ui/react-select/) | React controls, menu probing and unchanged selections. Unavailable choices remain warnings. |
+| [Shoelace Select examples](https://shoelace.style/components/select) | Open shadow roots, current selected display value and long multipart image. |
+| [Stanford commencement on YouTube](https://www.youtube.com/watch?v=UF8uR6Z6KLc) | Native popup transcript capture, timestamped segments, stable-end report and actual text clipboard. |
+
+Each ordinary-page case checks complete text against actual clipboard readback, samples passages across the live DOM, preserves field/scroll state, and reads back the automatic PNG without another Copy click. The independent browser reference starts at the top and hides scrollbars to match screenshot content width. Pixel comparison excludes source-located form masks and fixed/sticky regions that intentionally differ; it measures non-white pixels as well as background. The live form separately verifies opaque mask centers. Images and source-file hashes are retained under ignored `test-results/live-sites/`; changed layouts, blocked pages and mismatches require investigation, not automatic acceptance.
+
+These cases use a real native popup in fresh Chromium with test-only all-site access and clipboard readback. They do not replace a physical toolbar click in the installed profile. They also do not certify hidden/conditional content or every menu/video. Public site availability and contents change, so the live suite stays opt-in.
+
 ## What the checks prove
 
 | Check | Evidence |

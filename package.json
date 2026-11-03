@@ -15,6 +15,7 @@
     "test:action": "node verify-action.cjs",
     "test:e2e": "node verify-e2e.cjs",
     "test:youtube-live": "node verify-youtube-live.cjs",
+    "test:sites-live": "node verify-sites.cjs",
     "test": "npm run test:unit && npm run test:dom && npm run test:permissions && npm run test:action && npm run test:e2e",
     "package": "node scripts/package.cjs"
   },

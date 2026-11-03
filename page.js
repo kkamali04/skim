@@ -127,7 +127,7 @@ function redactText(str) { return SkimPrivacy.redactText(str); }
 function skimFieldValue(el) {
     if (el.type === 'password' || el.type === 'hidden') return '[REDACTED]';
     var labelled = (el.getAttribute('aria-labelledby') || '').split(/\s+/).map(function(id) {
-        var label = document.getElementById(id); return label ? label.textContent : '';
+        var label = el.getRootNode().getElementById(id); return label ? label.textContent : '';
     }).join(' ');
     var hint = [el.name, el.id, el.autocomplete, el.getAttribute('aria-label'),
         labelled, Array.from(el.labels || []).map(function(label){return label.textContent;}).join(' ')].join(' ');
@@ -137,17 +137,35 @@ function skimFieldValue(el) {
 
 function collectRedactZones() {
     var zones = [];
-    function add(rect) {
+    function add(rect, node) {
         if (rect.width < 1 || rect.height < 1 || rect.bottom < 0 || rect.right < 0 ||
             rect.top > innerHeight || rect.left > innerWidth) return;
-        zones.push({left: Math.floor(rect.left) - 3, top: Math.floor(rect.top) - 3,
-            width: Math.ceil(rect.width) + 6, height: Math.ceil(rect.height) + 6});
+        var left=Math.floor(rect.left)-3, top=Math.floor(rect.top)-3,
+            right=Math.ceil(rect.right)+3, bottom=Math.ceil(rect.bottom)+3;
+        // Rectangles can extend outside clipping ancestors, including across shadow hosts.
+        for (var parent=node.assignedSlot || node.parentElement || node.getRootNode().host; parent;
+            parent=parent.assignedSlot || parent.parentElement || parent.getRootNode().host) {
+            var cs=getComputedStyle(parent), box=parent.getBoundingClientRect();
+            if (cs.display === 'inline' || cs.display === 'contents') continue;
+            if (/hidden|clip|auto|scroll/.test(cs.overflowX)) {
+                left=Math.max(left,box.left+parent.clientLeft);
+                right=Math.min(right,box.left+parent.clientLeft+parent.clientWidth);
+            }
+            if (/hidden|clip|auto|scroll/.test(cs.overflowY)) {
+                top=Math.max(top,box.top+parent.clientTop);
+                bottom=Math.min(bottom,box.top+parent.clientTop+parent.clientHeight);
+            }
+        }
+        if (right<=left || bottom<=top) return;
+        zones.push({left:Math.floor(left),top:Math.floor(top),width:Math.ceil(right)-Math.floor(left),height:Math.ceil(bottom)-Math.floor(top)});
     }
     function scan(root) {
         var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
         var node;
         while ((node = walker.nextNode())) {
-            if (node.parentElement && node.parentElement.closest('script,style,noscript')) continue;
+            var parent=node.parentElement || root.host;
+            if (parent && (parent.closest('script,style,noscript') ||
+                getComputedStyle(parent).visibility !== 'visible')) continue;
             SkimPrivacy.patterns.forEach(function(re) {
                 re.lastIndex = 0;
                 var match;
@@ -155,14 +173,14 @@ function collectRedactZones() {
                     var range = document.createRange();
                     range.setStart(node, match.index);
                     range.setEnd(node, match.index + match[0].length);
-                    Array.from(range.getClientRects()).forEach(add);
+                    Array.from(range.getClientRects()).forEach(function(rect) { add(rect,node); });
                     if (!match[0].length) re.lastIndex++;
                 }
             });
         }
         root.querySelectorAll('input,textarea,select,[contenteditable="true"],iframe').forEach(function(el) {
             // Embedded documents cannot be inspected reliably; mask them conservatively.
-            if (el.type !== 'hidden') add(el.getBoundingClientRect());
+            if (el.type !== 'hidden' && getComputedStyle(el).visibility === 'visible') add(el.getBoundingClientRect(),el);
         });
         root.querySelectorAll('*').forEach(function(el) {
             if (el.shadowRoot) scan(el.shadowRoot);
@@ -494,7 +512,7 @@ function extractPageContextAsync(callback) {
     var linkedRecords = Object.create(null);
     var allImgMap       = Object.create(null); // src  → alt
     var allFormLines    = [];       // form fields (select, combobox, input, textarea)
-    var seenFormSet     = Object.create(null); // dedup by xpath
+    var seenFormSet     = new WeakSet(); // selectors can be shared by distinct controls
 
     function _pushLine(line) {
         line = (line || '').replace(/\s+/g, ' ').trim();
@@ -504,9 +522,9 @@ function extractPageContextAsync(callback) {
         }
     }
 
-    function _pushForm(key, line) {
-        if (!key || seenFormSet[key]) return;
-        seenFormSet[key] = 1;
+    function _pushForm(element, line) {
+        if (!element || seenFormSet.has(element)) return;
+        seenFormSet.add(element);
         allFormLines.push(line);
     }
 
@@ -514,7 +532,7 @@ function extractPageContextAsync(callback) {
         // aria-labelledby → look up referenced element's text
         var labelledBy = el.getAttribute && el.getAttribute('aria-labelledby');
         if (labelledBy) {
-            var ref = document.getElementById(labelledBy.split(' ')[0]);
+            var ref = el.getRootNode().getElementById(labelledBy.split(' ')[0]);
             if (ref && ref.innerText.trim()) return ref.innerText.trim();
         }
         return (el.getAttribute('aria-label') ||
@@ -585,11 +603,10 @@ function extractPageContextAsync(callback) {
     // state that innerText cannot see.
     function collectViewport() {
         // Build a skip-set of text that the FORM section will capture
-        // separately (react-select placeholders, validation error messages,
-        // pill labels). Dropping these from CONTENT removes duplication
-        // without losing information.
+        // separately (react-select placeholders). Alerts and validation
+        // messages carry context that is not represented by field values.
         var contentSkip = Object.create(null);
-        root.querySelectorAll('[class*="placeholder"], [role="alert"]').forEach(function(el) {
+        root.querySelectorAll('[class*="placeholder"]').forEach(function(el) {
             var t = (el.innerText || '').trim();
             if (t) contentSkip[t] = 1;
         });
@@ -666,7 +683,7 @@ function extractPageContextAsync(callback) {
                        values.join(', ') + ']' +
                        (ph ? ' placeholder="' + ph + '"' : '') +
                        hiddenInfo + ' | ' + xp;
-            _pushForm('rs:' + xp, line);
+            _pushForm(rs, line);
         });
 
         // Native <select> — list all options even when closed
@@ -677,7 +694,7 @@ function extractPageContextAsync(callback) {
             var opts = Array.prototype.map.call(sel.options, function(o) {
                 return (o.selected ? '●' : '○') + (o.text || '').trim();
             }).join(' | ');
-            _pushForm('select:' + xp,
+            _pushForm(sel,
                 '[SELECT] "' + label + '" opts: ' + opts + ' | ' + xp);
         });
 
@@ -704,7 +721,7 @@ function extractPageContextAsync(callback) {
                     }
                 }
             }
-            _pushForm('combobox:' + xp,
+            _pushForm(cb,
                 '[COMBOBOX' + expanded + '] "' + label + '" value="' + value + '"' + optTxt + ' | ' + xp);
         });
 
@@ -720,7 +737,7 @@ function extractPageContextAsync(callback) {
             if (itype === 'checkbox' || itype === 'radio')
                 chk = inp.checked ? ' [✓]' : ' [ ]';
             var val = inp.value ? ' value="' + skimFieldValue(inp).slice(0, 80) + '"' : '';
-            _pushForm('input:' + xp,
+            _pushForm(inp,
                 '[INPUT ' + itype + chk + '] "' + label + '"' + val + ' | ' + xp);
         });
 
@@ -741,7 +758,7 @@ function extractPageContextAsync(callback) {
             var safeValue = skimFieldValue(ta);
             var val = safeValue ? ' value="' + safeValue.slice(0, 12000) + '"' +
                 (safeValue.length > 12000 ? ' [TRUNCATED after 12000 characters]' : '') : '';
-            _pushForm('textarea:' + xp,
+            _pushForm(ta,
                 '[TEXTAREA] "' + label + '"' + val + ' | ' + xp);
         });
 
@@ -767,7 +784,7 @@ function extractPageContextAsync(callback) {
                 var dis = btn.disabled ? ' DISABLED' : '';
                 var pressed = btn.getAttribute('aria-pressed');
                 var p = pressed != null ? ' pressed=' + pressed : '';
-                _pushForm('btn:' + xp,
+                _pushForm(btn,
                     '[BUTTON' + dis + '] "' + label + '"' + p + ' | ' + xp);
             });
         }
@@ -796,7 +813,8 @@ function extractPageContextAsync(callback) {
                     }
                     if (node.nodeType !== 1 && node.nodeType !== 11) return;
                     var tag = node.tagName;
-                    if (tag === 'STYLE' || tag === 'SCRIPT' || tag === 'NOSCRIPT' || tag === 'TEMPLATE') return;
+                    if (tag === 'STYLE' || tag === 'SCRIPT' || tag === 'NOSCRIPT' || tag === 'TEMPLATE' ||
+                        tag === 'TEXTAREA' || tag === 'SELECT') return;
                     for (var i = 0; i < node.childNodes.length; i++) recurse(node.childNodes[i]);
                 }
                 recurse(sr);
@@ -805,12 +823,21 @@ function extractPageContextAsync(callback) {
             shadowHosts.forEach(function(sr) {
                 _shadowText(sr).split('\n').forEach(_pushLine);
                 sr.querySelectorAll('button, input, textarea, select, [role="button"]').forEach(function(node) {
-                    if (consumed.has(node)) return;
+                    if (consumed.has(node) || node.type === 'hidden' || node.type === 'password' ||
+                        !_isVisible(node) || getComputedStyle(node).visibility !== 'visible') return;
                     var xp = _xpath(node);
                     var lbl = _labelFor(node) ||
                               (node.innerText || '').trim() || '(no label)';
-                    _pushForm('shadow:' + xp,
-                        '[SHADOW ' + node.tagName.toLowerCase() + '] "' + lbl + '" | ' + xp);
+                    var value = skimFieldValue(node);
+                    var cap = node.tagName === 'TEXTAREA' ? 12000 : 80;
+                    var state = node.type === 'checkbox' || node.type === 'radio' ? (node.checked ? ' [✓]' : ' [ ]') : '';
+                    var details = value ? ' value="' + value.slice(0, cap) + '"' +
+                        (value.length > cap ? ' [TRUNCATED after '+cap+' characters]' : '') : '';
+                    if (node.options) details += ' opts: ' + Array.from(node.options).map(function(o) {
+                        return (o.selected ? '●' : '○') + (o.text || '').trim();
+                    }).join(' | ');
+                    _pushForm(node,
+                        '[SHADOW ' + node.tagName.toLowerCase() + state + '] "' + lbl + '"' + details + ' | ' + xp);
                 });
             });
         }
@@ -1201,9 +1228,11 @@ function extractPageContextAsync(callback) {
 
             setTimeout(function() {
                 var opts = [];
+                var openedListboxes = [];
                 var controlled = (cb.getAttribute('aria-controls') || cb.getAttribute('aria-owns') || '').split(/\s+/);
                 document.querySelectorAll('[role="listbox"]').forEach(function(lb) {
                     if (!_isVisible(lb) || preExisting.has(lb) && !cb.contains(lb) && controlled.indexOf(lb.id) < 0) return;
+                    openedListboxes.push(lb);
                     lb.querySelectorAll('[role="option"]').forEach(function(o) {
                         var t = (o.innerText || '').trim();
                         if (t) opts.push(t);
@@ -1214,7 +1243,9 @@ function extractPageContextAsync(callback) {
                 } else dropdownWarnings.push('dropdown options unavailable for "'+label+'". Open its menu and recapture to inspect available choices.');
                 // Close: Escape + blur
                 try { if (!wasOpen) {
-                    cb.dispatchEvent(new KeyboardEvent('keydown', {
+                    var escapeTarget = document.activeElement;
+                    if (!escapeTarget || !openedListboxes.some(function(lb) { return lb.contains(escapeTarget); })) escapeTarget = cb;
+                    escapeTarget.dispatchEvent(new KeyboardEvent('keydown', {
                         key: 'Escape', code: 'Escape',
                         keyCode: 27, which: 27,
                         bubbles: true, cancelable: true
@@ -1372,8 +1403,12 @@ async function getPositions(callback) {
             var pos = getComputedStyle(el).position;
             if (pos === 'fixed' || pos === 'sticky') {
                 changed.push([el, el.getAttribute('style')]);
-                el.style.setProperty(pos === 'fixed' ? 'visibility' : 'position',
-                    pos === 'fixed' ? 'hidden' : 'static', 'important');
+                if (pos === 'fixed') el.style.setProperty('visibility', 'hidden', 'important');
+                else {
+                    // Keep the containing block for absolute children while disabling sticky offsets.
+                    el.style.setProperty('position', 'relative', 'important');
+                    el.style.setProperty('inset', 'auto', 'important');
+                }
             }
         }); }
         hideOverlays(document);
