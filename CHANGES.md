@@ -2,6 +2,8 @@
 
 ## 1.2.1 — release candidate
 
+- Recognize current Upwork feed cards and export one structured record per job, preserving repeated proposal/payment/location/rate details with the correct title and URL. Keep skill links in the link list without treating them as jobs.
+- Hide fixed/sticky overlays inside nested open shadow roots during screenshot stitching, then restore their original styles on success or failure.
 - Fix native action-popup sizing (the viewport-width cap could collapse its width); use a fixed 460 × 400 frame with consistent padding and internal scrolling.
 - Fix text/code/transcript, history and recopy clipboard writes when the extension document loses focus. Use the existing clipboard permission inside the extension rather than relying on the captured page's clipboard policy.
 - Prevent smooth scrolling from fighting text capture and restore page position/focus before completion. Restore screenshot position before re-enabling site scrolling styles.

@@ -71,6 +71,18 @@ const fs = require('node:fs');
     assert.equal(urls.listing,'https://example.com/jobs/123456789012345?jobId=9876543210','Numeric destination IDs must remain useful');
     for(const secret of ['4242424242424242','2025550123','123-45-6789','synthetic-query-secret'])assert.ok(!urls.private.includes(secret),'Sensitive named URL parameters stay redacted');
     for(const secret of ['4242424242424242','202-555-0123','2025550123','123-45-6789'])assert.ok(!urls.plain.includes(secret),'Plain PII stays redacted');
+    await page.setContent('<main>'+Array.from({length:30},(_,i)=>'<section data-ev-sublocation="job_feed_tile"><h3><a href="https://example.com/jobs/capture-'+i+'">Capture job '+i+'</a></h3><p>Proposals: 20 to 50</p><p>Hourly: $30-$65</p><p>Payment verified</p><p>United States</p><p>Description '+i+' contact fixture@example.com</p><a href="https://example.com/skills/common">Common skill</a></section>').join('')+'</main>');
+    const listing=await page.evaluate(()=>new Promise(resolve=>extractPageContextAsync(resolve)));
+    const section=listing.split('== LINKED RECORDS JSON ==\n')[1];
+    assert.ok(section,'Current Upwork section cards must produce structured records');
+    const records=JSON.parse(section.slice(0,section.indexOf('\n]')+2));
+    assert.equal(records.length,30,'One record per job, without turning shared skill links into jobs');
+    records.forEach((record,i)=>{
+      assert.equal(record.title,'Capture job '+i);assert.equal(record.url,'https://example.com/jobs/capture-'+i);
+      for(const detail of ['Proposals: 20 to 50','Hourly: $30-$65','Payment verified','United States','Description '+i])assert.ok(record.text.includes(detail),'Repeated metadata stays attached to job '+i+': '+detail);
+      assert.ok(!record.text.includes('fixture@example.com'));assert.equal(record.truncated,false);
+    });
+    console.log('PASS: all 30 current Upwork-shaped cards preserve repeated per-job metadata, primary URLs and redaction');
     console.log('PASS: code output, password values, modern keys, URL tokens and screenshot input masks');
   } finally { await browser.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

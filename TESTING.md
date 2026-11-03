@@ -18,14 +18,16 @@ No production API key is required. The provider tests use synthetic responses. `
 | `verify-links.cjs` | Link normalization, accessible labels, safe schemes and frame link recovery. |
 | `verify-provider.cjs` | Permission/HTTPS gates, response-body timeouts, credential clearing on destination change, typed profile JSON. Provider transport is stubbed. |
 | `verify-exports.cjs` | ZIP entries, bytes, CRC32 known vector, central directory, empty archive and size validation. |
-| `verify-privacy.cjs` | Browser DOM extraction and redaction, private-key truncation boundaries, metadata and iframe labels. |
-| `verify-capture.cjs` | Browser scroll orchestration, nested crop, restoration and failed-tile handling with simulated tile messages. |
+| `verify-privacy.cjs` | Browser DOM extraction and redaction, private-key truncation boundaries, metadata and iframe labels. Thirty synthetic cards matching current Upwork markup retain repeated per-job details in structured records. |
+| `verify-capture.cjs` | Browser scroll orchestration, nested crop, restoration and failed-tile handling with simulated tile messages, including fixed overlays inside nested open shadow roots. |
 | `verify-youtube.cjs` | Legacy renderer, earlier view-model and current native view-model layouts: timestamp links, every fixture segment and scroll restoration. |
 | `verify-permissions.cjs` | Exact production manifest in a fresh Chrome profile: native popup registration; no installed host/clipboard-read grants; scripting, screenshot and provider network access denied without permission. |
 | `verify-action.cjs` | A real native action popup opened with `chrome.action.openPopup()` in a disposable profile. Tests the 460 × 400 viewport and body across panels, production extraction defaults, smooth-scroll position/focus restoration and real clipboard readback. Background text/code capture runs with Playwright's forced focus disabled and a clipboard-restricted captured page. |
 | `verify-e2e.cjs` | An isolated unpacked Chromium extension exercising actual scripting, capture, storage, PNG clipboard and downloads. Pixel checks cover nested stitching, ordinary horizontal overflow, part seams, input masks and manually reviewed masks. Full text downloads and all-part ZIPs are read back. Keyboard controls and the fixed 460 × 400 popup are checked. |
 
 E2E fixtures also cover native transcript controls, scrolling, timestamp records and failure without clipboard replacement. They are controlled DOM fixtures, not live YouTube acceptance.
+
+The Upwork capture audit found 30 job titles and 30 direct job URLs in the user's pasted export, but no structured record section. Read-only inspection of the same live feed found 27 payment-verified labels; the deduplicated text contained just one. Current feed cards use `section[data-ev-sublocation="job_feed_tile"]`, which the old record extractor missed. A failing 30-card regression reproduced the gap. Native extension fixtures check that per-job records reach the clipboard with repeated metadata and redaction intact. Screenshot fixtures also check actual pixels behind nested shadow-root overlays, which the old overlay scan missed. These checks do not verify full job-detail pages or replace a fresh installed-profile capture.
 
 ## Important boundaries
 
