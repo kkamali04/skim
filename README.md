@@ -2,7 +2,7 @@
 
 Capture web context. Review what you share.
 
-Skim is a local-first Chrome extension for copying page text, UI code and available YouTube transcripts, or reviewing full-page screenshots before export. No account, build step or AI provider is required.
+Skim is a local-first Chrome extension for copying page text, UI code, available YouTube transcripts and full-page screenshots. Screenshots copy automatically and stay available for masking and manual exports. No account, build step or AI provider is required.
 
 [![Test and package](https://github.com/kkamali04/skim/actions/workflows/test.yml/badge.svg)](https://github.com/kkamali04/skim/actions/workflows/test.yml)
 
@@ -15,7 +15,7 @@ Skim is a local-first Chrome extension for copying page text, UI code and availa
 
 - **Page text:** structured text, links, form controls, permitted frame content and open shadow DOM, with capture coverage warnings.
 - **Page code:** UI markup, accessible CSS, computed styles and asset references for development handoffs.
-- **Reviewed screenshots:** stitch full pages or a main scroll pane, add opaque masks by dragging or keyboard coordinates, undo masks, then explicitly copy or save.
+- **Screenshots to clipboard:** stitch full pages or a main scroll pane and copy automatically. Add opaque masks by dragging or keyboard coordinates, undo masks, then copy the edited image again or save manually.
 - **Complete captured-output export:** preview and save the current text without the history preview cap; save one PNG or a ZIP containing every reviewed screenshot part.
 - **YouTube transcripts:** read the native transcript when YouTube makes it available, preserving timestamps and links. Live-site limitations are documented below.
 - **Comfortable controls:** consistent local SVGs, purple light/dark themes, keyboard-accessible history and a fixed 460 × 400 frame with internal scrolling.
@@ -27,15 +27,17 @@ Skim is a local-first Chrome extension for copying page text, UI code and availa
 3. Select the extracted folder containing `manifest.json`.
 4. Pin Skim from Chrome's Extensions menu. Open a normal web page and click Skim, or use **Alt+Shift+P**.
 
-Keep the popup open during capture. Opening it runs the configured default action. Text copies immediately; screenshots open a review first. Reload the extension from Chrome's extension page after updating its files. Skim is currently distributed as unpacked source, not a Chrome Web Store listing.
+Keep the popup open during capture. Opening it runs the configured default action. Text and screenshots copy when capture finishes; paste with Ctrl+V. Reload the extension from Chrome's extension page after updating its files. Skim is currently distributed as unpacked source, not a Chrome Web Store listing.
 
 ## A typical workflow
 
 Click Skim on a page, inspect the text preview, then paste into your AI app, notes or document. **Save text** downloads the entire captured output; it does not remove extraction limits or recover inaccessible content. Change **Settings → Copy mode** to Code when you want markup/CSS.
 
-Choose **Take Screenshot**, inspect each part, mask private areas, then **Copy reviewed part**, **Save this part · PNG**, or **Save all reviewed parts · ZIP**. The ZIP includes each part with its own masks. Automatic redaction is best effort and does not scan images with OCR.
+Choose **Take Screenshot** to copy the complete image automatically. The preview stays open for edits. After adding masks, use **Copy full screenshot again** to update the clipboard; multipart captures also offer **Copy this part**, **Save this part · PNG** and **Save all reviewed parts · ZIP**. The ZIP includes every part with its individual masks. Automatic redaction is best effort and does not scan images with OCR. Extremely large images that exceed the combined clipboard canvas budget show an explicit failure and retain per-part copy/ZIP; Skim does not silently copy only the first part.
 
-History stays local. Large saved history entries are capped and carry a truncation warning; current text downloads are independent of that cap.
+Captures are clipboard-only by default: no automatic downloads or persistent screenshot cache. The preview is discarded when the popup closes. Optional **Save text history** keeps 20 entries by default for 14 days, with a 100,000-character cap and explicit truncation warnings. Expired entries are removed on read and by an hourly local cleanup alarm while Chrome runs; missed cleanup runs when Chrome resumes. Turning history off clears cached text. This update resets the former default-on history policy and clears that cache while preserving configuration and provider keys. Files you explicitly save remain where you saved them.
+
+Native select options and supported ARIA combobox choices are captured without selecting values. Unreadable menus produce coverage warnings. Labelled textareas retain up to 12,000 characters with explicit truncation; hidden/unloaded or virtualized choices may still be unavailable.
 
 ## Why is AI an on/off setting?
 

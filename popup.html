@@ -62,8 +62,8 @@
 <!-- ═══ CACHED ════════════════════════════════════════════ -->
 <div id="review" class="panel">
   <div class="body">
-    <div class="eyebrow">Before you share</div><h1>Review screenshot</h1>
-    <div class="s-hint">Review before sharing. Text masks are best-effort; images are not OCR-scanned. Drag to mask private areas. Nested pages capture the main scroll pane; floating overlays are omitted.</div>
+    <div class="eyebrow">Ready to paste</div><h1>Screenshot preview</h1>
+    <div class="s-hint">Copied automatically after capture. Add masks and copy again to apply edits. Redaction is best-effort; images are not OCR-scanned. Nested pages capture the main scroll pane.</div>
     <label>Part <select id="review-part" aria-label="Screenshot part"></select></label>
     <div class="review-viewport">
       <canvas id="review-canvas" aria-label="Screenshot masking canvas" style="display:block;width:100%;touch-action:none;cursor:crosshair"></canvas>
@@ -71,7 +71,8 @@
     <div id="review-status" role="status"></div>
     <details><summary><svg aria-hidden="true"><use href="assets/icons.svg#chevron-down"></use></svg>Add a mask by coordinates</summary><div class="s-hint">Pixel coordinates in this part. Use the fields or drag on the image.</div><form id="mask-form"><div class="mask-fields"><label>X<input class="s-input" id="mask-x" type="number" min="0" step="1" value="0" required></label><label>Y<input class="s-input" id="mask-y" type="number" min="0" step="1" value="0" required></label><label>Width<input class="s-input" id="mask-width" type="number" min="1" step="1" value="100" required></label><label>Height<input class="s-input" id="mask-height" type="number" min="1" step="1" value="100" required></label></div><button class="btn btn-surface" type="submit"><svg aria-hidden="true"><use href="assets/icons.svg#square"></use></svg>Add opaque mask</button></form></details>
     <button class="btn btn-surface" id="review-undo"><svg aria-hidden="true"><use href="assets/icons.svg#undo-2"></use></svg>Undo mask</button>
-    <button class="btn btn-primary" id="review-copy"><svg aria-hidden="true"><use href="assets/icons.svg#copy"></use></svg>Copy reviewed part</button>
+    <button class="btn btn-primary" id="review-copy-all"><svg aria-hidden="true"><use href="assets/icons.svg#copy"></use></svg>Copy full screenshot again</button>
+    <button class="btn btn-surface" id="review-copy"><svg aria-hidden="true"><use href="assets/icons.svg#copy"></use></svg>Copy this part</button>
     <button class="btn btn-surface" id="review-download"><svg aria-hidden="true"><use href="assets/icons.svg#download"></use></svg>Save this part · PNG</button><button class="btn btn-surface" id="review-download-all"><svg aria-hidden="true"><use href="assets/icons.svg#download"></use></svg><span id="review-all-label">Save all reviewed parts · ZIP</span></button>
     <button class="btn btn-ghost" id="review-cancel">Cancel</button>
   </div>
@@ -97,7 +98,7 @@
 <div class="s-row"><div><label class="s-name" for="set-capture-delay">Capture speed</label><div class="s-hint">Allow more time for page rendering</div></div><select class="s-select" id="set-capture-delay"><option value="150">Fast · 150ms</option><option value="300">Normal · 300ms</option><option value="500">Safe · 500ms</option><option value="800">Careful · 800ms</option></select></div></section>
 <section class="sec"><h2 class="sec-title">Privacy &amp; history</h2>
 <div class="s-row"><div><label class="s-name" for="set-autoredact">Auto-redact sensitive text</label><div class="s-hint">Best-effort masks for keys, SSNs, emails and cards. Review before sharing.</div></div><label class="toggle"><input type="checkbox" id="set-autoredact" aria-label="Auto-redact sensitive text"><span class="t-track"></span></label></div>
-<div class="s-row"><div><label class="s-name" for="set-history-enabled">Save history</label><div class="s-hint">Text is stored locally; saved entries over 100k characters are truncated.</div></div><label class="toggle"><input type="checkbox" id="set-history-enabled" aria-label="Save history"><span class="t-track"></span></label></div></section>
+<div class="s-row"><div><label class="s-name" for="set-history-enabled">Save text history</label><div class="s-hint">Off by default. If enabled, keep text for 14 days: 20 entries by default, capped at 100k characters each. Turning off clears cached text. Screenshots are never saved automatically.</div></div><label class="toggle"><input type="checkbox" id="set-history-enabled" aria-label="Save text history"><span class="t-track"></span></label></div></section>
 <details class="sec-collapsible"><summary><svg aria-hidden="true"><use href="assets/icons.svg#chevron-down"></use></svg>AI summarization</summary>
 <div class="s-row"><div><label class="s-name" for="set-summary-enabled">Summarize page text with AI</label><div class="s-hint">Off: capture locally. On: send captured text to your provider; API charges may apply. Text mode only.</div></div><label class="toggle"><input type="checkbox" id="set-summary-enabled" aria-label="Summarize page text with AI"><span class="t-track"></span></label></div>
 <div class="s-row"><div><label class="s-name" for="set-summary-provider">Provider</label><div class="s-hint">Changing destination clears the saved key</div></div><select class="s-select" id="set-summary-provider"><option value="zai">Z.ai</option><option value="moonshot">Moonshot</option><option value="openrouter">OpenRouter</option><option value="custom">Custom</option></select></div>

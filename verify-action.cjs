@@ -6,8 +6,8 @@ fs.mkdirSync(extension);fs.mkdirSync(out,{recursive:true});
 for(const name of ['manifest.json','background.js','api.js','privacy.js','page.js','youtube.js','popup.js','popup.html','popup.css','exports.js','icon16.png','icon48.png','icon128.png'])fs.copyFileSync(path.join(__dirname,name),path.join(extension,name));
 fs.cpSync(path.join(__dirname,'assets'),path.join(extension,'assets'),{recursive:true});
 const manifest=JSON.parse(fs.readFileSync(path.join(extension,'manifest.json')));
-// openPopup() does not grant activeTab. Only this test copy can access the local fixture/read back its own clipboard writes.
-manifest.host_permissions=['http://127.0.0.1/*'];manifest.permissions.push('clipboardRead');
+// openPopup() does not grant activeTab. Only this test copy gets screenshot permission and reads back its own clipboard writes.
+manifest.host_permissions=['<all_urls>'];manifest.permissions.push('clipboardRead');
 fs.writeFileSync(path.join(extension,'manifest.json'),JSON.stringify(manifest));
 fs.writeFileSync(path.join(extension,'clipboard-check.html'),'<script src="privacy.js"></script><script src="api.js"></script>');
 const server=http.createServer((req,res)=>{
@@ -50,6 +50,15 @@ let context;
  assert.ok(state.positions.length<35,'Smooth-scroll animation must not fight the capture sweep: '+state.positions.length+' scroll events');
  assert.equal(state.active,'original','Dropdown probing restores the original focused control');assert.equal(state.style,'smooth','Restore the site scroll behavior');
  console.log('PASS default text capture: bounded scroll sweep, position/focus/style restoration and actual clipboard readback');
+ const sourceSize=await page.evaluate(()=>({width:Math.max(innerWidth,document.documentElement.scrollWidth),height:document.documentElement.scrollHeight,viewportWidth:innerWidth}));
+ const sourcePNG=await worker.evaluate(async()=>{const [tab]=await chrome.tabs.query({active:true,currentWindow:true});return chrome.tabs.captureVisibleTab(tab.windowId,{format:'png'});});
+ const bitmapScale=Buffer.from(sourcePNG.split(',')[1],'base64').readUInt32BE(16)/sourceSize.viewportWidth;
+ const expectedImage={width:Math.ceil(sourceSize.width*bitmapScale),height:Math.ceil(sourceSize.height*bitmapScale)};
+ await evaluate('document.querySelector("#btn-action2").click()');
+ await evaluate('new Promise((resolve,reject)=>{const start=Date.now();const poll=()=>{if(getCurrentPanel()==="review")return resolve();if(getCurrentPanel()==="error-panel")return reject(Error(document.querySelector("#error-msg").textContent));if(Date.now()-start>60000)return reject(Error("Screenshot capture timed out"));setTimeout(poll,100);};poll();})');
+ const automaticImage=await evaluate('(async()=>{for(let i=0;i<50;i++){const items=await navigator.clipboard.read();if(items[0]?.types.includes("image/png")){const image=await createImageBitmap(await items[0].getType("image/png"));const size={width:image.width,height:image.height};image.close();return size;}await new Promise(r=>setTimeout(r,100));}return null;})()');
+ assert.deepEqual(automaticImage,expectedImage,'Take screenshot must automatically copy the complete PNG from the native action popup: '+JSON.stringify({actual:automaticImage,expected:expectedImage,viewport:await page.evaluate(()=>({width:innerWidth,height:innerHeight,dpr:devicePixelRatio,clientWidth:document.documentElement.clientWidth}))}));
+ console.log('PASS native action screenshot: automatic complete PNG clipboard readback without another Copy click');
  await evaluate('window.close()');
  // Keep the extension document alive but unfocused, with clipboard writes forbidden by the captured site.
  const check=await context.newPage();await check.goto(new URL('clipboard-check.html',worker.url()).href);
@@ -71,5 +80,5 @@ let context;
  assert.equal((await check.evaluate(()=>navigator.clipboard.readText())).replace(/\r\n/g,'\n'),text);
  assert.ok(text.includes('Paragraph 11'));
  console.log('PASS actual unfocused-extension text capture/clipboard readback with production extraction defaults');
- fs.writeFileSync(path.join(out,'action-result.json'),JSON.stringify({passed:true,at:new Date().toISOString(),browser:context.browser().version(),headed:process.argv.includes('--headed'),nativePopup:true,productionDefaults:true,frames,scrollEvents:state.positions.length,scope:'Disposable Chromium, localhost host grant and clipboardRead are test-only; no physical toolbar gesture.'},null,2));
+ fs.writeFileSync(path.join(out,'action-result.json'),JSON.stringify({passed:true,at:new Date().toISOString(),browser:context.browser().version(),headed:process.argv.includes('--headed'),nativePopup:true,productionDefaults:true,frames,scrollEvents:state.positions.length,automaticImage,scope:'Disposable Chromium, all-site capture grant and clipboardRead are test-only; no physical toolbar gesture.'},null,2));
 })().catch(e=>{fs.writeFileSync(path.join(out,'action-result.json'),JSON.stringify({passed:false,at:new Date().toISOString(),error:e.message},null,2));console.error(e);process.exitCode=1;}).finally(async()=>{if(context)await context.close();server.close();});

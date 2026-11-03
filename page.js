@@ -126,8 +126,11 @@ function redactText(str) { return SkimPrivacy.redactText(str); }
 
 function skimFieldValue(el) {
     if (el.type === 'password' || el.type === 'hidden') return '[REDACTED]';
+    var labelled = (el.getAttribute('aria-labelledby') || '').split(/\s+/).map(function(id) {
+        var label = document.getElementById(id); return label ? label.textContent : '';
+    }).join(' ');
     var hint = [el.name, el.id, el.autocomplete, el.getAttribute('aria-label'),
-        Array.from(el.labels || []).map(function(label){return label.textContent;}).join(' ')].join(' ');
+        labelled, Array.from(el.labels || []).map(function(label){return label.textContent;}).join(' ')].join(' ');
     if (window._skimAutoRedact !== false && /password|secret|token|api.?key|credit.?card|cc-number|ssn/i.test(hint)) return '[REDACTED]';
     return window._skimAutoRedact !== false ? redactText(el.value || '') : (el.value || '');
 }
@@ -515,9 +518,9 @@ function extractPageContextAsync(callback) {
             if (ref && ref.innerText.trim()) return ref.innerText.trim();
         }
         return (el.getAttribute('aria-label') ||
+                (el.labels && el.labels[0] && el.labels[0].innerText) ||
                 el.getAttribute('placeholder') ||
                 el.name || el.id ||
-                (el.labels && el.labels[0] && el.labels[0].innerText) ||
                 '').toString().trim();
     }
 
@@ -729,12 +732,15 @@ function extractPageContextAsync(callback) {
             if (consumed.has(ta) || !_isVisible(ta)) return;
             var hasIdentity = ta.name || ta.id ||
                               ta.getAttribute('aria-label') ||
+                              ta.getAttribute('aria-labelledby') ||
                               ta.getAttribute('placeholder') ||
                               (ta.labels && ta.labels.length);
             if (!hasIdentity) return;
             var xp = _xpath(ta);
             var label = _labelFor(ta);
-            var val = ta.value ? ' value="' + skimFieldValue(ta).slice(0, 120) + '"' : '';
+            var safeValue = skimFieldValue(ta);
+            var val = safeValue ? ' value="' + safeValue.slice(0, 12000) + '"' +
+                (safeValue.length > 12000 ? ' [TRUNCATED after 12000 characters]' : '') : '';
             _pushForm('textarea:' + xp,
                 '[TEXTAREA] "' + label + '"' + val + ' | ' + xp);
         });
@@ -1026,6 +1032,7 @@ function extractPageContextAsync(callback) {
 
     // Filled by _probeDropdowns. Each entry: { label, opts[] }.
     var dropdownOptions = [];
+    var dropdownWarnings = [];
 
     function doStep() {
         collectViewport();
@@ -1154,12 +1161,14 @@ function extractPageContextAsync(callback) {
     // body root), then close with Escape. Serial — one open at a time so
     // listboxes don't overlap. Bounded to 20 dropdowns × ~250ms ≈ 5s max.
     function _probeDropdowns(done) {
-        if (window._skimProbeDropdowns === false) { done(); return; }
+        if (window._skimProbeDropdowns === false) { dropdownWarnings.push('dropdown probing disabled; closed-menu choices may be missing.'); done(); return; }
         var combos = Array.prototype.slice.call(
-            document.querySelectorAll('[role="combobox"][aria-haspopup]')
+            document.querySelectorAll('[role="combobox"]')
         ).filter(function(cb) {
-            return _isVisible(cb) && cb.getAttribute('aria-expanded') !== 'true';
-        }).slice(0, 20);
+            return _isVisible(cb);
+        });
+        if (combos.length > 20) dropdownWarnings.push('dropdown probing limited to 20 controls; additional choices may be missing.');
+        combos = combos.slice(0, 20);
 
         if (!combos.length) { done(); return; }
 
@@ -1168,7 +1177,8 @@ function extractPageContextAsync(callback) {
             if (i >= combos.length) { done(); return; }
             var cb = combos[i++];
             var rs = _findReactSelectRoot(cb) || cb;
-            var label = _findFieldLabel(rs) || rs.id || _labelFor(cb) || '(no label)';
+            var label = (rs === cb ? _labelFor(cb) : _findFieldLabel(rs)) || rs.id || _labelFor(cb) || '(no label)';
+            var wasOpen = cb.getAttribute('aria-expanded') === 'true';
 
             // Snapshot existing listboxes BEFORE we open this combo so we
             // can identify the newly-rendered one.
@@ -1177,21 +1187,23 @@ function extractPageContextAsync(callback) {
                 preExisting.add(lb);
             });
 
-            try {
+            try { if (!wasOpen) {
                 cb.focus({preventScroll:true});
                 // react-select opens on ArrowDown; native ARIA opens on it too.
                 ['keydown', 'keyup'].forEach(function(type) {
                     cb.dispatchEvent(new KeyboardEvent(type, {
                         key: 'ArrowDown', code: 'ArrowDown',
+                        keyCode: 40, which: 40,
                         bubbles: true, cancelable: true
                     }));
-                });
+                }); }
             } catch (e) { /* ignore */ }
 
             setTimeout(function() {
                 var opts = [];
+                var controlled = (cb.getAttribute('aria-controls') || cb.getAttribute('aria-owns') || '').split(/\s+/);
                 document.querySelectorAll('[role="listbox"]').forEach(function(lb) {
-                    if (preExisting.has(lb) || !_isVisible(lb)) return;
+                    if (!_isVisible(lb) || preExisting.has(lb) && !cb.contains(lb) && controlled.indexOf(lb.id) < 0) return;
                     lb.querySelectorAll('[role="option"]').forEach(function(o) {
                         var t = (o.innerText || '').trim();
                         if (t) opts.push(t);
@@ -1199,15 +1211,16 @@ function extractPageContextAsync(callback) {
                 });
                 if (opts.length) {
                     dropdownOptions.push({ label: label, opts: opts });
-                }
+                } else dropdownWarnings.push('dropdown options unavailable for "'+label+'". Open its menu and recapture to inspect available choices.');
                 // Close: Escape + blur
-                try {
+                try { if (!wasOpen) {
                     cb.dispatchEvent(new KeyboardEvent('keydown', {
                         key: 'Escape', code: 'Escape',
+                        keyCode: 27, which: 27,
                         bubbles: true, cancelable: true
                     }));
                     cb.blur();
-                } catch (e) { /* ignore */ }
+                } } catch (e) { /* ignore */ }
                 setTimeout(probeNext, 60);
             }, 200);
         }
@@ -1241,7 +1254,7 @@ function extractPageContextAsync(callback) {
             mainHeading = hEl.innerText.trim().replace(/\s+/g, ' ');
         }
         var stats = [];
-        if (allFormLines.length) stats.push(allFormLines.length + ' form fields');
+        if (allFormLines.length) stats.push(allFormLines.length + ' controls');
         var linkCount = Object.keys(allLinkMap).length;
         if (linkCount) stats.push(linkCount + ' links');
         var imgCount = Object.keys(allImgMap).length;
@@ -1258,6 +1271,7 @@ function extractPageContextAsync(callback) {
         out.push('COVERAGE: rendered DOM only; not a complete site crawl. Hidden/unloaded content, closed shadow roots and image/canvas text may be missing.');
         out.push('LIMITS: main sweep '+stepCount+'/'+MAX_STEPS+' steps; secondary panes bounded to 5 panes and 15 steps per sweep; field/option text may be shortened.');
         if (stepCount >= MAX_STEPS) out.push('CAPTURE WARNING: main scroll limit reached; partial capture.');
+        dropdownWarnings.forEach(function(warning) { out.push('CAPTURE WARNING: '+warning); });
         if (window._skimExtractIframes === false) out.push('CAPTURE WARNING: iframe extraction disabled.');
         out.push('REDACTION: '+(window._skimAutoRedact !== false ? 'best-effort patterns; review before sharing.' : 'OFF. Review private information before sharing.'));
         out.push('');

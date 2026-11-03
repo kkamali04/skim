@@ -28,8 +28,9 @@ ${Array.from({length:2},(_,i)=>`<section data-ev-sublocation="job_feed_tile"><h3
 const screenshotFixture=`<style>body{margin:0;overflow:hidden}header{height:60px;background:red}main{position:absolute;top:80px;left:100px;width:650px;height:500px;overflow:auto}.row{height:200px;box-sizing:border-box;background:rgb(20,120,60)}.row:nth-child(even){background:rgb(30,70,180)}</style><header>Stationary header</header><main>${Array.from({length:8},(_,i)=>`<div class="row">Row ${i}<input value="private-field-${i}"></div>`).join('')}</main><script>document.querySelector('main').addEventListener('scroll',()=>{if(!document.querySelector('#lazy')&&document.querySelector('main').scrollTop>300){const p=document.createElement('span');p.id='lazy';p.textContent='lazy@example.com';document.querySelectorAll('.row')[5].append(p);}});</script>`;
 const youtubeFixture=`<h1 class="ytd-watch-metadata">Transcript fixture</h1><div id="owner"><ytd-channel-name><a>Fixture channel</a></ytd-channel-name></div><ytd-video-description-transcript-section-renderer><button onclick="document.querySelector('#segments').hidden=false">Show transcript</button></ytd-video-description-transcript-section-renderer><ytd-transcript-renderer><div id="footer"><button>English (auto-generated)</button></div><div id="segments" hidden style="height:200px;overflow:auto">${Array.from({length:25},(_,i)=>`<ytd-transcript-segment-renderer style="display:block;height:40px"><span class="segment-timestamp">0:${String(i).padStart(2,'0')}</span><span class="segment-text">Transcript sentence ${i}</span></ytd-transcript-segment-renderer>`).join('')}</div></ytd-transcript-renderer>`;
 const currentYouTubeFixture=youtubeFixture.replaceAll('ytd-transcript-segment-renderer','transcript-segment-view-model').replaceAll('segment-timestamp','ytwTranscriptSegmentViewModelTimestamp').replaceAll('segment-text','ytAttributedStringHost');
+const proposalFixture=`<h1>Proposal capture fixture</h1><label id="frequency-label">Rate increase frequency</label><div role="combobox" tabindex="0" aria-expanded="false" aria-controls="dropdown-menu" aria-labelledby="frequency-label">Select a frequency</div><label id="percent-label">Rate increase percentage</label><div role="combobox" tabindex="0" aria-expanded="false" aria-controls="dropdown-menu" aria-labelledby="percent-label">Select a percent</div><label id="cover-label">Cover Letter</label><textarea aria-labelledby="cover-label"></textarea><script>document.querySelector('textarea').value='Cover letter fixture '+'x'.repeat(1800)+' END OF COVER LETTER';document.querySelectorAll('[role="combobox"]').forEach((cb,i)=>cb.addEventListener('keydown',e=>{if(e.keyCode===40){const m=document.createElement('ul');m.id='dropdown-menu';m.setAttribute('role','listbox');m.innerHTML=(i?['5%','10%','15%','Custom']:['Never','Every 3 months','Every 6 months','Every 12 months']).map(t=>'<li role="option">'+t+'</li>').join('');document.body.append(m);cb.setAttribute('aria-expanded','true');}if(e.keyCode===27){document.getElementById('dropdown-menu')?.remove();cb.setAttribute('aria-expanded','false');}}));</script>`;
 const fullPageFixture=`<style>body{margin:0;width:1200px}.stripe{height:200px;background:rgb(20,120,60)}.stripe:nth-child(even){background:rgb(30,70,180)}#floating{position:fixed;inset:0;height:50px;background:red}</style><div>${Array.from({length:45},(_,i)=>`<div class="stripe">${i===40?'<input value="boundary-private-field">':''}</div>`).join('')}</div><div id="floating">Floating overlay</div><script>const host=document.createElement('div');host.id='shadow-popup-host';document.body.append(host);const nested=document.createElement('div');host.attachShadow({mode:'open'}).append(nested);nested.attachShadow({mode:'open'}).innerHTML='<aside style="position:fixed;inset:0;height:50px;background:red">Shadow popup</aside>';</script>`;
-const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/html');res.end(req.url==='/frame'?'<p>frame@example.com</p><input aria-label="secret token" value="frame-secret-value"><label for="credential">API key</label><input id="credential" value="synthetic-labelled-secret">':req.url==='/shot'?screenshotFixture:req.url==='/full'?fullPageFixture:fixture);});
+const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/html');res.end(req.url==='/frame'?'<p>frame@example.com</p><input aria-label="secret token" value="frame-secret-value"><label for="credential">API key</label><input id="credential" value="synthetic-labelled-secret">':req.url==='/shot'?screenshotFixture:req.url==='/full'?fullPageFixture:req.url==='/proposal'?proposalFixture:fixture);});
 let context;
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));
@@ -51,17 +52,20 @@ let context;
     return query(opts,cb);
   };
  },{target:tab});
- const errors=[];context.on('page',p=>{p.on('pageerror',e=>{errors.push(e.message);console.log('PAGE ERROR',e.message);});p.on('console',m=>{if(m.type()==='error')console.log('CONSOLE ERROR',m.text());});});
+ let automaticDownloads=0;
+ const errors=[];context.on('page',p=>{p.on('download',()=>automaticDownloads++);p.on('pageerror',e=>{errors.push(e.message);console.log('PAGE ERROR',e.message);});p.on('console',m=>{if(m.type()==='error')console.log('CONSOLE ERROR',m.text());});});
  async function popup(settings={}) {
-  await worker.evaluate(async s=>{await chrome.storage.local.set({skim_settings:{historyEnabled:false,cacheTTL:0,probeDropdowns:false,...s}});},settings);
+  await worker.evaluate(async s=>{await chrome.storage.local.set({skim_settings:{historyEnabled:false,historyConsentVersion:1,cacheTTL:0,probeDropdowns:false,...s}});},settings);
   const event=context.waitForEvent('page');
   await worker.evaluate(async url=>await chrome.windows.create({url,type:'popup',focused:true,width:500,height:780}),`chrome-extension://${id}/popup.html`);
   const p=await event;await p.waitForLoadState();return p;
  }
- let p=await popup();
+ await worker.evaluate(()=>chrome.storage.local.set({skim_history:[{ts:Date.now(),text:'Legacy cached capture'}]}));
+ let p=await popup({historyEnabled:true,historyConsentVersion:0});
  await p.locator('#result').waitFor({state:'visible',timeout:30000});
  const text=await p.evaluate(async()=>{const v=await chrome.storage.local.get('skim_settings');return document.querySelector('#result-label').textContent;});
  assert.equal(text,'Text copied');
+ assert.deepEqual(await p.evaluate(async()=>({enabled:settings.historyEnabled,history:(await chrome.storage.local.get('skim_history')).skim_history||[]})),{enabled:false,history:[]},'Migrate the old default-on history to clipboard-only and discard cached captures');
  const panelFrames=await p.evaluate(()=>{
    const previous=getCurrentPanel(),frames=[];
    for(const id of ALL_PANELS){showPanel(id);const body=document.body.getBoundingClientRect(),header=document.querySelector('.app-header').getBoundingClientRect(),footer=document.querySelector('.local-footer').getBoundingClientRect();frames.push({id,width:body.width,height:body.height,header:header.top,footer:footer.top,overflow:document.body.scrollWidth>460});}
@@ -189,16 +193,29 @@ let context;
  assert.ok(!controlText.includes('synthetic-labelled-secret'));
  await p.close();console.log('PASS native text clipboard redacts metadata/control labels and iframe labelled fields');
 
+ await page.goto(origin+'/proposal');p=await popup({probeDropdowns:true});
+ await p.getByText('Text copied',{exact:true}).waitFor();
+ const proposalText=await p.evaluate(()=>navigator.clipboard.readText());
+ for(const value of ['Never','Every 3 months','Every 6 months','Every 12 months','5%','10%','15%','Custom','END OF COVER LETTER'])assert.ok(proposalText.includes(value),'Native clipboard retains '+value);
+ assert.deepEqual(await page.locator('[role="combobox"]').evaluateAll(nodes=>nodes.map(n=>({value:n.innerText,expanded:n.getAttribute('aria-expanded')}))),[{value:'Select a frequency',expanded:'false'},{value:'Select a percent',expanded:'false'}]);
+ await p.close();console.log('PASS native proposal capture: dropdown choices and full Cover Letter reach clipboard without selecting values');
+
+ await worker.evaluate(()=>chrome.storage.local.remove('skim_history'));automaticDownloads=0;
  await page.goto(origin+'/shot');
  p=await popup({defaultAction:'screenshot'});
  await p.locator('#review').waitFor({state:'visible',timeout:60000});
  await p.waitForTimeout(600);
+ await p.getByText('Copied full screenshot. Nothing saved automatically.',{exact:true}).waitFor();
  const nativePNG=await worker.evaluate(w=>chrome.tabs.captureVisibleTab(w,{format:'png'}),tab.windowId);
  const scale=Buffer.from(nativePNG.split(',')[1],'base64').readUInt32BE(16)/800;
+ const automaticPNG=await p.evaluate(async scale=>{const [item]=await navigator.clipboard.read();const image=await createImageBitmap(await item.getType('image/png'));const c=document.createElement('canvas');c.width=image.width;c.height=image.height;const ctx=c.getContext('2d');ctx.drawImage(image,0,0);const result={width:image.width,height:image.height,input:Array.from(ctx.getImageData(Math.floor(80*scale),Math.floor(10*scale),1,1).data)};image.close();return result;},scale);
  const pixels=await p.evaluate(scale=>{const c=document.querySelector('#review-canvas'),ctx=c.getContext('2d');return {width:c.width,height:c.height,rows:Array.from({length:8},(_,i)=>Array.from(ctx.getImageData(Math.floor(500*scale),Math.floor((i*200+100)*scale),1,1).data)),input:Array.from(ctx.getImageData(Math.floor(80*scale),Math.floor(10*scale),1,1).data)};},scale);
  assert.equal(pixels.width,Math.ceil(650*scale));assert.equal(pixels.height,Math.ceil(1600*scale));
  pixels.rows.forEach((rgb,i)=>assert.deepEqual(rgb,i%2?[30,70,180,255]:[20,120,60,255]));
  assert.deepEqual(pixels.input,[0,0,0,255]);
+ assert.equal(automaticPNG.width,pixels.width);assert.equal(automaticPNG.height,pixels.height);assert.deepEqual(automaticPNG.input,[0,0,0,255],'Automatic clipboard copy retains source redaction');
+ assert.equal(automaticDownloads,0,'Screenshot capture must not download files automatically');
+ assert.deepEqual(await p.evaluate(async()=>{const state=await chrome.storage.local.get(null);return {history:state.skim_history||[],imageKeys:Object.keys(state).filter(k=>/screenshot|skim_cache/.test(k))};}),{history:[],imageKeys:[]},'Clipboard-only capture leaves no persistent capture history or screenshot cache');
  assert.equal(await page.locator('main').evaluate(el=>el.scrollTop),0);
  const canvas=p.locator('#review-canvas'),box=await canvas.boundingBox();
  await p.mouse.move(box.x+30,box.y+30);await p.mouse.down();await p.mouse.move(box.x+110,box.y+65);await p.mouse.up();
@@ -214,7 +231,7 @@ let context;
  const freshBox=await canvas.boundingBox();
  await p.mouse.move(freshBox.x+30,freshBox.y+30);await p.mouse.down();await p.mouse.move(freshBox.x+110,freshBox.y+65);await p.mouse.up();
  assert.equal(await p.evaluate(()=>reviewParts[0].masks.length),1,'Drag after keyboard controls still masks visible canvas');
- await p.locator('#review-copy').click();await p.getByText('Copied part 1 of 1',{exact:true}).waitFor();
+ await p.locator('#review-copy-all').click();await p.getByText('Copied full screenshot. Nothing saved automatically.',{exact:true}).waitFor();
  const clipboardSize=await p.evaluate(async()=>{const items=await navigator.clipboard.read();const blob=await items[0].getType('image/png');const image=await createImageBitmap(blob);return {width:image.width,height:image.height};});
  assert.deepEqual(clipboardSize,{width:pixels.width,height:pixels.height});
  const maskedPixel=await p.evaluate(async()=>{const [item]=await navigator.clipboard.read();const image=await createImageBitmap(await item.getType('image/png'));const c=document.createElement('canvas');c.width=image.width;c.height=image.height;const ctx=c.getContext('2d');ctx.drawImage(image,0,0);const m=reviewParts[0].masks[0];return Array.from(ctx.getImageData(Math.floor(m.x+m.w/2),Math.floor(m.y+m.h/2),1,1).data);});
@@ -232,6 +249,14 @@ let context;
  assert.deepEqual(await p.evaluate(()=>Array.from(document.querySelector('#review-canvas').getContext('2d').getImageData(10,10,1,1).data)),[0,0,255,255]);
  await p.locator('#review-copy').click();await p.getByText('Copied part 2 of 2',{exact:true}).waitFor();
  await p.evaluate(()=>{reviewParts[0].masks.push({x:0.5,y:0.5,w:19,h:19});reviewParts[1].masks.push({x:0.5,y:0.5,w:19,h:19});renderReview();});
+ await p.locator('#review-copy-all').click();await p.getByText('Copied full screenshot · all 2 parts. Nothing saved automatically.',{exact:true}).waitFor();
+ const combinedMasks=await p.evaluate(async()=>{const [item]=await navigator.clipboard.read();const image=await createImageBitmap(await item.getType('image/png'));const c=document.createElement('canvas');c.width=image.width;c.height=image.height;const ctx=c.getContext('2d');ctx.drawImage(image,0,0);return {width:c.width,height:c.height,top:Array.from(ctx.getImageData(0,0,1,1).data),bottom:Array.from(ctx.getImageData(0,40,1,1).data)};});
+ assert.deepEqual(combinedMasks,{width:40,height:80,top:[0,0,0,255],bottom:[0,0,0,255]},'Complete clipboard image includes every part and its opaque masks');
+ await p.evaluate(async()=>{reviewParts[1].bounds.y=40000;await copyAllReviewed();reviewParts[1].bounds.y=40;});
+ await p.getByText(/Copy failed: Full screenshot exceeds the clipboard image size limit/).waitFor();
+ assert.deepEqual(await p.evaluate(async()=>{const [item]=await navigator.clipboard.read();const image=await createImageBitmap(await item.getType('image/png'));return {width:image.width,height:image.height};}),{width:40,height:80},'Rejected oversized full-image copy preserves the previous clipboard');
+ const horizontal=await p.evaluate(async()=>{const files=await reviewedFiles();const blob=await CaptureAPI.combineScreenshotBlobs(files.map(f=>f.blob),[{x:0,y:0,width:40,height:40},{x:40,y:0,width:40,height:40}]);const image=await createImageBitmap(blob),c=document.createElement('canvas');c.width=image.width;c.height=image.height;const ctx=c.getContext('2d');ctx.drawImage(image,0,0);return {width:c.width,height:c.height,right:Array.from(ctx.getImageData(70,30,1,1).data)};});
+ assert.deepEqual(horizontal,{width:80,height:40,right:[0,0,255,255]},'Horizontal multipart assembly uses capture coordinates rather than stacking every part vertically');
  const zipEvent=p.waitForEvent('download');await p.locator('#review-download-all').click();
  const zipDownload=await zipEvent,zipBytes=fs.readFileSync(await zipDownload.path());
  let zipOffset=0,zipCount=0;const zipPNGs=[];
@@ -251,10 +276,13 @@ let context;
  console.log('PASS native screenshot capture: nested stitching pixel rows, input masks, manual mask/undo, explicit copy');
  console.log('PASS keyboard coordinate masks and ZIP export of every reviewed/masked screenshot part');
 
- await page.goto(origin+'/full');
+ automaticDownloads=0;await page.goto(origin+'/full');
  await page.evaluate(()=>window.scrollTo(170,230));
  p=await popup({defaultAction:'screenshot'});
  await p.locator('#review').waitFor({state:'visible',timeout:120000});
+ await p.getByText('Copied full screenshot · all 2 parts. Nothing saved automatically.',{exact:true}).waitFor({timeout:30000});
+ assert.deepEqual(await p.evaluate(async()=>{const [item]=await navigator.clipboard.read();const image=await createImageBitmap(await item.getType('image/png'));return {width:image.width,height:image.height};}),{width:Math.ceil(1200*scale),height:Math.ceil(9000*scale)},'Automatic multipart capture copies all 9000 pixels, not only the first 8192px part');
+ assert.equal(automaticDownloads,0,'Automatic multipart copy does not save files');
  const fullPage=await p.evaluate(scale=>{
    let top=0;return reviewParts.map(part=>{
      const c=document.createElement('canvas');c.width=part.image.width;c.height=part.image.height;const ctx=c.getContext('2d');ctx.drawImage(part.image,0,0);

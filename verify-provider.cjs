@@ -27,6 +27,7 @@ const summarize=baseUrl=>new Promise(resolve=>sandbox.window.CaptureAPI.summariz
  const popup={document:{addEventListener(){}},console};
  vm.createContext(popup);
  vm.runInContext(fs.readFileSync(path.join(__dirname,'popup.js'),'utf8'),popup);
+ assert.equal(popup.DEFAULTS.historyEnabled,false,'Captures must be clipboard-only by default');
  popup.saveSettings=popup.syncSettingsUI=popup.updateProfileStatus=()=>{};
  const original={...popup.DEFAULTS,summaryEnabled:true,summaryKey:'synthetic-old-key',openrouterKey:'synthetic-legacy-key'};
  for(const change of [{summaryBaseUrl:'https://other.example/v1'}, {summaryProvider:'custom'},

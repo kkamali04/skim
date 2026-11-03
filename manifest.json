@@ -2,7 +2,7 @@
   "name": "Skim",
   "version": "1.2.1",
   "manifest_version": 3,
-  "description": "Capture page text, code and YouTube transcripts. Review and redact full-page screenshots before copying or downloading.",
+  "description": "Capture page text, code and YouTube transcripts. Copy full-page screenshots automatically, with optional masking and downloads.",
   "background": {
     "service_worker": "background.js"
   },
@@ -22,7 +22,8 @@
     "storage",
     "unlimitedStorage",
     "clipboardWrite",
-    "scripting"
+    "scripting",
+    "alarms"
   ],
   "optional_host_permissions": [
     "https://*/*",

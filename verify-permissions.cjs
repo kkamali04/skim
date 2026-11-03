@@ -36,5 +36,15 @@ let context;
    return {requests,error:response.error,granted:await chrome.permissions.contains({origins:['https://example.com/*']})};
  });
  assert.equal(provider.granted,false);assert.equal(provider.requests,0);assert.match(provider.error,/Enable provider access/);
+ const alarm=await worker.evaluate(()=>chrome.alarms.get('skim-history-expiry'));
+ assert.equal(alarm?.periodInMinutes,60,'Register local hourly cleanup for optional text history');
+ const history=await worker.evaluate(async()=>{
+   await chrome.storage.local.set({skim_settings:{historyEnabled:true,historyConsentVersion:1},skim_history:[{ts:Date.now()-15*86400000,text:'Expired synthetic capture'},{ts:Date.now()-1000,text:'Recent synthetic capture'}]});
+   await chrome.alarms.create('skim-history-expiry',{when:Date.now()+1000});
+   for(let i=0;i<100;i++){const {skim_history:h}=await chrome.storage.local.get('skim_history');if(h?.length===1)return h;await new Promise(r=>setTimeout(r,100));}
+   throw Error('Native cleanup alarm did not delete the expired capture');
+ });
+ assert.equal(history[0].text,'Recent synthetic capture');
+ console.log('PASS native local alarm removes 14-day-expired history and preserves recent opt-in captures');
  console.log('PASS exact production manifest: native popup registration, no installed host/clipboard-read grants, injection/capture denied before gesture, provider denied before network');
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{if(context)await context.close();server.close();});

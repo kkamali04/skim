@@ -274,7 +274,9 @@ window.CaptureAPI = (function() {
             if (done) return;
             done = true;
             chrome.runtime.onMessage.removeListener(onCaptureMsg);
-            if (err) { errback(err); } else { callback(blobs); }
+            if (err) { errback(err); } else {
+                callback(blobs, screenshots.map(function(s) { return {x:s.left,y:s.top,width:s.canvas.width,height:s.canvas.height}; }));
+            }
         }
 
         chrome.runtime.onMessage.addListener(onCaptureMsg);
@@ -349,32 +351,43 @@ window.CaptureAPI = (function() {
     }
 
 
-    function captureToClipboard(tab, callback, errback, progress, splitnotifier, captureDelay, autoRedact) {
-        captureToBlobs(tab, function(blobs) {
-            if (!blobs || !blobs.length) {
-                errback('No blobs generated');
-                return;
+    async function combineScreenshotBlobs(blobs, layout) {
+        if (!blobs || !blobs.length) throw new Error('No screenshot parts generated');
+        if (blobs.length === 1) return blobs[0];
+        if (!layout || layout.length !== blobs.length || layout.some(function(p) {
+            return !p || ![p.x,p.y,p.width,p.height].every(Number.isSafeInteger) || p.x < 0 || p.y < 0 || p.width < 1 || p.height < 1;
+        })) throw new Error('Screenshot part layout is unavailable. Copy individual parts or save the ZIP.');
+        var width = Math.max.apply(null,layout.map(function(p){return p.x+p.width;}));
+        var height = Math.max.apply(null,layout.map(function(p){return p.y+p.height;}));
+        // ponytail: bound the combined canvas to 32M pixels; larger captures retain per-part copy/ZIP.
+        if (width > 32767 || height > 32767 || width*height > MAX_AREA)
+            throw new Error('Full screenshot exceeds the clipboard image size limit. Copy individual parts or save the ZIP.');
+        var canvas = document.createElement('canvas'); canvas.width=width;canvas.height=height;
+        try {
+            var ctx=canvas.getContext('2d');
+            if (!ctx) throw new Error('Cannot allocate the full screenshot image');
+            for (var i=0;i<blobs.length;i++) {
+                var image=await createImageBitmap(blobs[i]);
+                try {
+                    if(image.width!==layout[i].width || image.height!==layout[i].height) throw new Error('Screenshot part dimensions changed');
+                    ctx.drawImage(image,layout[i].x,layout[i].y);
+                } finally {image.close();}
             }
+            return await new Promise(function(resolve,reject){canvas.toBlob(function(blob){blob?resolve(blob):reject(new Error('Full screenshot PNG encoding failed'));},'image/png');});
+        } finally {canvas.width=0;canvas.height=0;}
+    }
 
-            var primaryBlob = blobs[0];
-
-            // Write from the POPUP context first. While the popup is open
-            // it owns document focus, so navigator.clipboard.write()
-            // succeeds here. The tab-context path fails with
-            // NotAllowedError "Document is not focused" because the tab
-            // is NOT the focused document while the popup is open —
-            // clipboardWrite only exempts writeText, not binary write().
-            copyBlobToClipboard(primaryBlob).then(function() {
-                callback(blobs);
-            }).catch(function(popupErr) {
-                // Fallback: tab context (covers the rare case where the
-                // popup lost focus, e.g. user clicked into the page).
-                _writeImageBlobToTabClipboard(tab, primaryBlob, function(ok) {
-                    if (ok) { callback(blobs); return; }
-                    console.error('[Skim] Clipboard error (both paths):', popupErr);
-                    errback('Clipboard copy failed: ' + (popupErr && popupErr.message || popupErr));
-                });
-            });
+    function captureToClipboard(tab, callback, errback, progress, splitnotifier, captureDelay, autoRedact) {
+        captureToBlobs(tab, async function(blobs, layout) {
+            try {
+                var fullBlob=await combineScreenshotBlobs(blobs,layout);
+                try { await copyBlobToClipboard(fullBlob); }
+                catch(error) {
+                    var ok=await new Promise(function(resolve){_writeImageBlobToTabClipboard(tab,fullBlob,resolve);});
+                    if(!ok)throw error;
+                }
+                callback(blobs,layout);
+            } catch(error) {errback('Clipboard copy failed: '+error.message);}
         }, errback, progress, splitnotifier, captureDelay, autoRedact);
     }
 
@@ -791,6 +804,7 @@ window.CaptureAPI = (function() {
         capturePageText: capturePageText,
         capturePageCode: capturePageCode,
         copyBlobToClipboard: copyBlobToClipboard,
+        combineScreenshotBlobs: combineScreenshotBlobs,
         copyTextToClipboard: copyTextToClipboard,
         writeImageToClipboardInTab: _writeImageBlobToTabClipboard,
         summarizeViaLLM: summarizeViaLLM,

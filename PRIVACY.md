@@ -4,9 +4,9 @@ Skim has no analytics, hosted backend or automatic upload service. Fonts and SVG
 
 ## Local capture
 
-Opening Skim starts the configured capture on the active page. Text/code is copied to your clipboard. Screenshots stay in the popup until you explicitly copy or download a reviewed part or ZIP. Closing the popup discards the screenshot review session. Your OS or clipboard manager may retain copied content.
+Opening Skim starts the configured capture on the active page. Text/code and screenshots copy automatically to your clipboard. Screenshots use the current automatic-redaction setting and remain in popup memory for optional manual masks. Add masks and copy again to replace the clipboard with the edited image. Closing the popup discards the preview. There is no persistent screenshot cache or automatic download. Your OS or clipboard manager may retain copied content.
 
-Text history is optional and stored in `chrome.storage.local`. Up to 20 entries are kept by default, with a 100,000-character cap per entry and an explicit truncation warning when re-copied. Clear all history in the History panel; turning history off stops future saving and does not erase existing entries. Current text preview/download uses the complete captured output, independently of the history cap.
+Text history is off by default. If explicitly enabled, it is stored in `chrome.storage.local`: 20 entries by default, a 14-day lifetime, and a 100,000-character cap per entry with an explicit truncation warning when re-copied. Expired entries are removed on read and by an hourly local Chrome alarm, including after Chrome resumes from sleep. Turning history off clears cached text. This update resets the old default-on policy and clears old cached captures; provider keys/settings remain. Current text preview/download is independent of the history cap. Manually downloaded files are user exports and are not deleted by the history cleanup.
 
 ## Redaction
 
@@ -27,6 +27,7 @@ API keys are stored locally, without application-level encryption; they are not 
 | `activeTab`, `scripting` | Read/capture the page you invoke Skim on. Restricted Chrome pages cannot be captured. |
 | `clipboardWrite` | Copy text or a reviewed PNG. Production does not request clipboard read access. |
 | `storage`, `unlimitedStorage` | Local settings and optional capture history. |
+| `alarms` | Local hourly deletion of expired optional text history; no website access. |
 | Optional HTTPS host access | Selected AI provider only when requested; not a blanket grant on install. |
 | Optional localhost access | User-invoked external vault bridge. |
 

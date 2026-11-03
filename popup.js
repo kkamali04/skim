@@ -12,7 +12,7 @@ var DEFAULTS = {
   // recreate or modify the page's UI.
   copyMode:       'text',
   captureDelay:   300,
-  historyEnabled: true,
+  historyEnabled: false,
   historyLimit:   20,
   autoRedact:     true,
   youtubeTranscript: true,
@@ -97,6 +97,11 @@ function loadSettings(cb) {
   chrome.storage.local.get('skim_settings', function(res) {
     var stored = res.skim_settings || {};
     settings = Object.assign({}, DEFAULTS, stored);
+    // The previous release saved captures by default. Require a fresh opt-in for retention.
+    if (stored.historyConsentVersion !== 1) {
+      settings.historyEnabled=false;
+      saveSettings();
+    }
     // Migration: pre-provider builds stored one OpenRouter-only key. Keep
     // those users on OpenRouter with their key + model intact; fresh
     // installs get the zai preset from DEFAULTS.
@@ -118,6 +123,8 @@ function loadSettings(cb) {
 }
 
 function saveSettings() {
+  settings.historyConsentVersion=1;
+  if (!settings.historyEnabled) chrome.storage.local.remove('skim_history');
   chrome.storage.local.set({ skim_settings: settings });
   updatePrivacyState();
 }
@@ -252,7 +259,11 @@ function updateProviderHint() {
 /* ── History ─────────────────────────────────────────────── */
 function loadHistory(cb) {
   chrome.storage.local.get('skim_history', function(res) {
-    cb(res.skim_history || []);
+    var history=Array.isArray(res.skim_history)?res.skim_history:[];
+    var cutoff=Date.now()-14*86400000;
+    var fresh=history.filter(function(entry){return Number.isFinite(entry.ts) && entry.ts>cutoff && entry.ts<=Date.now();});
+    if (fresh.length!==history.length) chrome.storage.local.set({skim_history:fresh});
+    cb(fresh);
   });
 }
 
@@ -534,24 +545,30 @@ function startTextCopy() {
 function startCapture() {
   currentMode = 'screenshot';
   showPanel('loading');
-  $('progress-label').textContent = 'Capturing for review…';
+  $('progress-label').textContent = 'Capturing to clipboard…';
   var bar = $('bar'); bar.classList.remove('pulse'); bar.style.width = '0%';
   CaptureAPI.captureToBlobs(currentTab, openReview, errorHandler,
     progress, splitnotifier, settings.captureDelay, settings.autoRedact !== false);
 }
 
 var reviewParts = [], reviewIndex = 0, reviewDrag = null;
-async function openReview(blobs) {
+async function openReview(blobs, layout) {
   reviewParts.forEach(function(p) { p.image.close(); });
   reviewParts = [];
   try {
-    for (var blob of blobs) reviewParts.push({image:await createImageBitmap(blob), masks:[]});
+    var top=0;
+    for (var i=0;i<blobs.length;i++) {
+      var image=await createImageBitmap(blobs[i]);
+      reviewParts.push({image:image,masks:[],bounds:layout && layout[i] || {x:0,y:top,width:image.width,height:image.height}});
+      top+=image.height;
+    }
     reviewIndex = 0;
     $('review-part').replaceChildren();
     reviewParts.forEach(function(p,i) { $('review-part').add(new Option((i+1)+' / '+reviewParts.length, i)); });
     showPanel('review');
     renderReview();
-  } catch (e) { errorHandler('Preview failed: '+e.message); }
+  } catch (e) { errorHandler('Preview failed: '+e.message); return; }
+  await copyAllReviewed();
 }
 function renderReview() {
   var part = reviewParts[reviewIndex], canvas = $('review-canvas');
@@ -560,7 +577,8 @@ function renderReview() {
   $('mask-x').max = part.image.width - 1; $('mask-y').max = part.image.height - 1;
   $('mask-width').max = part.image.width; $('mask-height').max = part.image.height;
   $('review-all-label').textContent = 'Save all ' + reviewParts.length + ' reviewed parts · ZIP';
-  $('review-status').textContent = part.masks.length+' manual masks. Nothing copied yet.';
+  $('review-status').textContent = part.masks.length+' manual masks. Copy the full screenshot again after edits.';
+  $('review-copy').style.display=reviewParts.length>1?'flex':'none';
   $('review-undo').disabled = !part.masks.length;
 }
 function drawReviewedPart(part, canvas) {
@@ -588,14 +606,13 @@ async function exportReview(download) {
     } else {
       await CaptureAPI.copyBlobToClipboard(blob);
       $('review-status').textContent='Copied part '+(reviewIndex+1)+' of '+reviewParts.length;
+      setBadge('done','Copied part');
     }
   } catch(e) { $('review-status').textContent='Export failed: '+e.message; }
 }
 
-/* Export all parts with the same opaque-mask renderer used by preview. */
-async function downloadAllReviewed() {
-  var button = $('review-download-all'); button.disabled = true;
-  try {
+/* Reuse the same opaque-mask renderer for complete clipboard and ZIP output. */
+async function reviewedFiles() {
     var files = [];
     for (var i = 0; i < reviewParts.length; i++) {
       var canvas = document.createElement('canvas'); drawReviewedPart(reviewParts[i], canvas);
@@ -603,7 +620,24 @@ async function downloadAllReviewed() {
       if (!blob) throw new Error('PNG encoding failed for part ' + (i+1));
       files.push({name:'skim-part-' + (i+1) + '-of-' + reviewParts.length + '.png',blob:blob});
     }
-    SkimExports.download(await SkimExports.zip(files), 'skim-reviewed-' + Date.now() + '.zip');
+    return files;
+}
+async function copyAllReviewed() {
+  var button=$('review-copy-all');button.disabled=true;
+  $('review-status').textContent='Copying the complete screenshot…';
+  try {
+    var files=await reviewedFiles();
+    var blob=await CaptureAPI.combineScreenshotBlobs(files.map(function(f){return f.blob;}),reviewParts.map(function(p){return p.bounds;}));
+    await CaptureAPI.copyBlobToClipboard(blob);
+    $('review-status').textContent='Copied full screenshot'+(reviewParts.length>1?' · all '+reviewParts.length+' parts':'')+'. Nothing saved automatically.';
+    setBadge('done','Copied');
+  } catch(e) { $('review-status').textContent='Copy failed: '+e.message;setBadge('err','Copy failed'); }
+  finally {button.disabled=false;}
+}
+async function downloadAllReviewed() {
+  var button = $('review-download-all'); button.disabled = true;
+  try {
+    SkimExports.download(await SkimExports.zip(await reviewedFiles()), 'skim-reviewed-' + Date.now() + '.zip');
     $('review-status').textContent = 'Saved all ' + reviewParts.length + ' reviewed parts';
   } catch (e) { $('review-status').textContent = 'Export failed: ' + e.message; }
   finally { button.disabled = false; }
@@ -616,6 +650,7 @@ document.addEventListener('DOMContentLoaded', function() {
   $('review-part').addEventListener('change',function(){reviewIndex=Number(this.value);renderReview();});
   $('review-undo').addEventListener('click',function(){reviewParts[reviewIndex].masks.pop();renderReview();});
   $('review-copy').addEventListener('click',function(){exportReview(false);});
+  $('review-copy-all').addEventListener('click',copyAllReviewed);
   $('review-download').addEventListener('click',function(){exportReview(true);});
   $('review-cancel').addEventListener('click',function(){window.close();});
   $('review-canvas').addEventListener('pointerdown',function(e){reviewDrag=reviewPoint(e);this.setPointerCapture(e.pointerId);});

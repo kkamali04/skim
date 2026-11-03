@@ -83,6 +83,25 @@ const fs = require('node:fs');
       assert.ok(!record.text.includes('fixture@example.com'));assert.equal(record.truncated,false);
     });
     console.log('PASS: all 30 current Upwork-shaped cards preserve repeated per-job metadata, primary URLs and redaction');
+    await page.setContent('<label id="frequency-label">How often do you want a rate increase?</label><div role="combobox" tabindex="0" aria-expanded="false" aria-controls="dropdown-menu" aria-labelledby="frequency-label">Select a frequency</div><label id="percent-label">How much of an increase do you want?</label><div role="combobox" tabindex="0" aria-expanded="false" aria-controls="dropdown-menu" aria-labelledby="percent-label">Select a percent</div><label id="cover-label">Cover Letter</label><textarea aria-labelledby="cover-label"></textarea><label id="secret-label">Secret token</label><textarea aria-labelledby="secret-label"></textarea><div role="combobox" tabindex="0" aria-label="Unavailable choices">Select an option</div>');
+    const cover='Cover letter fixture\n'+'x'.repeat(1800)+'\nEND OF COVER LETTER';
+    await page.evaluate(cover=>{
+      const label=document.createElement('label');label.htmlFor='rate';label.textContent='Hourly rate';const rate=document.createElement('input');rate.id='rate';rate.placeholder='$0.00';rate.value='$40.00';document.body.append(label,rate);
+      document.querySelector('[aria-labelledby="cover-label"]').value=cover;
+      document.querySelector('[aria-labelledby="secret-label"]').value='synthetic-labelled-textarea-value';
+      document.querySelectorAll('[aria-controls]').forEach((cb,i)=>cb.addEventListener('keydown',e=>{
+        if(e.keyCode===40){const menu=document.createElement('ul');menu.id='dropdown-menu';menu.setAttribute('role','listbox');menu.innerHTML=(i?['5%','10%','15%','Custom']:['Never','Every 3 months','Every 6 months','Every 12 months']).map(t=>'<li role="option">'+t+'</li>').join('');document.body.append(menu);cb.setAttribute('aria-expanded','true');}
+        if(e.keyCode===27){document.getElementById('dropdown-menu')?.remove();cb.setAttribute('aria-expanded','false');}
+      }));window._skimProbeDropdowns=true;
+    },cover);
+    const proposal=await page.evaluate(()=>new Promise(resolve=>extractPageContextAsync(resolve)));
+    for(const choice of ['Never','Every 3 months','Every 6 months','Every 12 months','5%','10%','15%','Custom'])assert.ok(proposal.includes(choice),'Capture current ARIA dropdown choice: '+choice);
+    assert.ok(proposal.includes(cover),'Capture the full aria-labelledby textarea, beyond 120 characters');
+    assert.ok(proposal.includes('[INPUT text] "Hourly rate" value="$40.00"'),'Use the real associated field label instead of its placeholder');
+    assert.ok(!proposal.includes('synthetic-labelled-textarea-value'),'Sensitive aria-labelledby values remain redacted');
+    assert.ok(proposal.includes('CAPTURE WARNING: dropdown options unavailable'),'Unreadable dropdown choices must be reported');
+    assert.deepEqual(await page.locator('[aria-controls]').evaluateAll(nodes=>nodes.map(n=>({value:n.innerText,expanded:n.getAttribute('aria-expanded')}))),[{value:'Select a frequency',expanded:'false'},{value:'Select a percent',expanded:'false'}]);
+    console.log('PASS: current ARIA dropdown options, unchanged selections, full labelled textarea and explicit missing-option coverage');
     console.log('PASS: code output, password values, modern keys, URL tokens and screenshot input masks');
   } finally { await browser.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

@@ -2,6 +2,9 @@
 
 ## 1.2.1 — release candidate
 
+- Copy the complete screenshot automatically after capture, including multipart layouts within the combined image budget. Keep masking, full-image recopy, per-part copy and manual downloads. Oversized image failures preserve the previous clipboard.
+- Make captures clipboard-only by default with no screenshot cache or automatic files. Reset the prior default-on text history policy; optional text history expires after 14 days using a local cleanup alarm.
+- Read ARIA combobox choices without requiring aria-haspopup, support legacy keyboard handlers, and report unavailable options. Include aria-labelledby textareas and up to 12,000 characters of their redacted values with explicit truncation.
 - Recognize current Upwork feed cards and export one structured record per job, preserving repeated proposal/payment/location/rate details with the correct title and URL. Keep skill links in the link list without treating them as jobs.
 - Hide fixed/sticky overlays inside nested open shadow roots during screenshot stitching, then restore their original styles on success or failure.
 - Fix native action-popup sizing (the viewport-width cap could collapse its width); use a fixed 460 × 400 frame with consistent padding and internal scrolling.
