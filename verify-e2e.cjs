@@ -66,7 +66,7 @@ let context;
    for(const id of ALL_PANELS){showPanel(id);const body=document.body.getBoundingClientRect(),header=document.querySelector('.app-header').getBoundingClientRect(),footer=document.querySelector('.local-footer').getBoundingClientRect();frames.push({id,width:body.width,height:body.height,header:header.top,footer:footer.top,overflow:document.body.scrollWidth>460});}
    showPanel(previous);return frames;
  });
- for(const frame of panelFrames)assert.deepEqual(frame,{id:frame.id,width:460,height:500,header:0,footer:456,overflow:false},'Stable popup frame for '+frame.id);
+ for(const frame of panelFrames)assert.deepEqual(frame,{id:frame.id,width:460,height:400,header:0,footer:356,overflow:false},'Stable popup frame for '+frame.id);
  assert.equal(await p.locator('svg:not([aria-hidden="true"])').count(),0,'Decorative icons must be hidden from screen readers');
  assert.equal(await p.locator('#btn-nav-settings').evaluate(el=>el.getBoundingClientRect().width),44);
  assert.equal(await p.locator('#set-cache-ttl').count(),0,'No setting for unused screenshot cache');

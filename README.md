@@ -18,7 +18,7 @@ Skim is a local-first Chrome extension for copying page text, UI code and availa
 - **Reviewed screenshots:** stitch full pages or a main scroll pane, add opaque masks by dragging or keyboard coordinates, undo masks, then explicitly copy or save.
 - **Complete captured-output export:** preview and save the current text without the history preview cap; save one PNG or a ZIP containing every reviewed screenshot part.
 - **YouTube transcripts:** read the native transcript when YouTube makes it available, preserving timestamps and links. Live-site limitations are documented below.
-- **Comfortable controls:** consistent local SVGs, purple light/dark themes, keyboard-accessible history and a fixed 460 × 500 frame with internal scrolling.
+- **Comfortable controls:** consistent local SVGs, purple light/dark themes, keyboard-accessible history and a fixed 460 × 400 frame with internal scrolling.
 
 ## Install
 
@@ -41,6 +41,8 @@ History stays local. Large saved history entries are capped and carry a truncati
 
 AI summarization is optional compression before text is copied. Leave it **off** to capture locally and paste into any AI app yourself. Turn it **on** only if you want Skim to send captured page text to the selected provider using your API key. Charges and provider retention policies may apply.
 
+Moonshot, Z.ai and OpenRouter are optional presets. Listing their hosts in the manifest does not grant access on installation. Capture, redaction, screenshots and exports require no AI provider.
+
 Configure an HTTPS OpenAI-compatible base URL, model and key in **Settings → AI summarization**. Presets are editable starting points, not a promise of model availability or account entitlement. The **Test provider** button sends a small test prompt and may be billable. Chrome's host permission is separate from the summarization toggle. Turning AI off stops automatic requests but does not revoke an already granted Chrome permission.
 
 Changing provider/base URL clears the saved key and turns AI off. If summarization fails, Skim copies raw captured text and displays a failure warning. AI summaries can omit information; choose local capture when exact captured text matters. Screenshot, code and transcript captures do not use this summarization path. Read [Privacy](PRIVACY.md) before using it with sensitive pages.
@@ -52,6 +54,7 @@ Changing provider/base URL clears the saved key and turns AI off. If summarizati
 - Exported text reports coverage and truncation. Redaction recognizes common patterns, not every possible secret. Review before sharing.
 - **YouTube depends on native transcript availability.** Skim supports the current and legacy transcript layouts. On November 2, 2026, the current layout was verified on a live public video (110 segments, 0:07–15:01). Some videos/profiles still return HTTP 400 or show site-access/ad-blocker restrictions; Skim reports failure instead of bypassing those restrictions or silently substituting page text.
 - Automated browser tests use an isolated unpacked extension. Actual installed-toolbar gestures and provider permission prompts still require verification in the user's profile. See [Testing](TESTING.md) for exact evidence boundaries.
+- **1.2.1 remains a release candidate.** Installed-profile testing exposed clipboard focus failures, scrolling jitter and incorrect native popup sizing. Repairs have automated regressions; installed-profile acceptance is still required before a stable release.
 
 ## Develop
 

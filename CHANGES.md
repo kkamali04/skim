@@ -2,7 +2,10 @@
 
 ## 1.2.1 — release candidate
 
-- Resize the fixed popup to 460 × 500, with consistent padding and internal scrolling.
+- Fix native action-popup sizing (the viewport-width cap could collapse its width); use a fixed 460 × 400 frame with consistent padding and internal scrolling.
+- Fix text/code/transcript, history and recopy clipboard writes when the extension document loses focus. Use the existing clipboard permission inside the extension rather than relying on the captured page's clipboard policy.
+- Prevent smooth scrolling from fighting text capture and restore page position/focus before completion. Restore screenshot position before re-enabling site scrolling styles.
+- Add a real native-action popup regression using production extraction defaults; disable Playwright's artificial focus for background-document clipboard checks.
 - Fix live YouTube extraction for the current native transcript view-model and its timestamp/text classes; retain both older layouts.
 - Add layout regressions, native extension clipboard coverage for the current layout and successful live DOM verification.
 - Add exact-production-manifest permission tests with no host grants, proving capture and provider requests are denied before permission.

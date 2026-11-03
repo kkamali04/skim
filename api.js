@@ -620,6 +620,30 @@ window.CaptureAPI = (function() {
         });
     }
 
+    async function copyTextToClipboard(text) {
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch (error) {
+            // Chrome's async API rejects unfocused documents, including extension popups.
+            // clipboardWrite also permits this synchronous fallback inside our own document.
+            var previous = document.activeElement;
+            var field = document.createElement('textarea');
+            field.value = text;
+            field.readOnly = true;
+            field.setAttribute('aria-hidden', 'true');
+            field.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none';
+            document.body.appendChild(field);
+            try {
+                field.focus({preventScroll:true});
+                field.select();
+                if (!document.execCommand('copy')) throw error;
+            } finally {
+                field.remove();
+                if (previous && previous.isConnected) previous.focus({preventScroll:true});
+            }
+        }
+    }
+
     function capturePageText(tab, callback, errback, autoRedact, opts) {
         opts = opts || {};
         var doIframes = opts.extractIframes !== false;
@@ -650,36 +674,16 @@ window.CaptureAPI = (function() {
 
                     function _writeAndCallback(finalText) {
                         if (autoRedact !== false) finalText = SkimPrivacy.redactText(finalText);
-                        // Write from the tab context. The popup loses focus
-                        // before navigator.clipboard.writeText resolves on
-                        // slow pages, causing "Document is not focused"
-                        // errors. The tab is always focused (it's the active
-                        // tab) so clipboard.writeText succeeds there.
-                        chrome.scripting.executeScript({
-                            target: { tabId: tab.id },
-                            func: function(t) {
-                                return navigator.clipboard.writeText(t).then(
-                                    function() { return { ok: true }; },
-                                    function(e) { return { ok: false, err: String(e && e.message || e) }; }
-                                );
-                            },
-                            args: [finalText],
-                        }, function(results) {
-                            var r = results && results[0] && results[0].result;
-                            if (r && r.ok) { callback(finalText); return; }
-                            // Fallback: popup context (works on simple pages
-                            // where popup keeps focus through the write).
-                            navigator.clipboard.writeText(finalText).then(function() {
-                                callback(finalText);
-                            }).catch(function(err) {
-                                errback('Clipboard error: ' + (r && r.err || err.message || 'unknown'));
-                            });
+                        copyTextToClipboard(finalText).then(function() {
+                            callback(finalText);
+                        }).catch(function(err) {
+                            errback('Clipboard error: ' + (err.message || 'unknown'));
                         });
                     }
 
                     // After the (optional) cross-frame pass, maybe summarize
                     // before clipboard write. Both paths converge at
-                    // _writeAndCallback so the tab-context clipboard fix
+                    // _writeAndCallback so the clipboard fallback
                     // applies regardless.
                     function _maybeSummarize(finalText) {
                         if (autoRedact !== false) finalText = SkimPrivacy.redactText(finalText);
@@ -733,8 +737,8 @@ window.CaptureAPI = (function() {
 
     // Vibe-code mode: ask page.js for a single markdown block describing
     // the page's UI (META / HTML / CSS / COMPUTED / ASSETS) and copy it.
-    // Cloned from capturePageText — same injection + tab-context
-    // clipboard-write pattern, no iframe/summarization passes (the code
+    // Same injection and extension clipboard path as capturePageText,
+    // without iframe/summarization passes (the code
     // snapshot is top-frame only by design).
     function capturePageCode(tab, callback, errback, autoRedact) {
         chrome.scripting.executeScript(
@@ -756,27 +760,10 @@ window.CaptureAPI = (function() {
                         errback('No code extracted from page');
                         return;
                     }
-                    // Write from the tab context — same fix as text copy
-                    // (writeText works from the tab; the popup may lose
-                    // focus before the write resolves on slow pages).
-                    chrome.scripting.executeScript({
-                        target: { tabId: tab.id },
-                        func: function(t) {
-                            return navigator.clipboard.writeText(t).then(
-                                function() { return { ok: true }; },
-                                function(e) { return { ok: false, err: String(e && e.message || e) }; }
-                            );
-                        },
-                        args: [text],
-                    }, function(results) {
-                        var r = results && results[0] && results[0].result;
-                        if (r && r.ok) { callback(text); return; }
-                        // Fallback: popup context
-                        navigator.clipboard.writeText(text).then(function() {
-                            callback(text);
-                        }).catch(function(err) {
-                            errback('Clipboard error: ' + (r && r.err || err.message || 'unknown'));
-                        });
+                    copyTextToClipboard(text).then(function() {
+                        callback(text);
+                    }).catch(function(err) {
+                        errback('Clipboard error: ' + (err.message || 'unknown'));
                     });
                 });
             }
@@ -791,7 +778,7 @@ window.CaptureAPI = (function() {
                 var result=results && results[0] && results[0].result;
                 if(chrome.runtime.lastError || !result || result.error) {errback(result && result.error || 'Transcript extraction failed');return;}
                 var text=autoRedact !== false ? SkimPrivacy.redactText(result.text) : result.text;
-                navigator.clipboard.writeText(text).then(function(){callback(text);}).catch(function(e){errback('Clipboard write failed: '+e.message);});
+                copyTextToClipboard(text).then(function(){callback(text);}).catch(function(e){errback('Clipboard write failed: '+e.message);});
             });
         });
     }
@@ -804,6 +791,7 @@ window.CaptureAPI = (function() {
         capturePageText: capturePageText,
         capturePageCode: capturePageCode,
         copyBlobToClipboard: copyBlobToClipboard,
+        copyTextToClipboard: copyTextToClipboard,
         writeImageToClipboardInTab: _writeImageBlobToTabClipboard,
         summarizeViaLLM: summarizeViaLLM,
         summarizeViaOpenRouter: summarizeViaLLM,  // legacy alias

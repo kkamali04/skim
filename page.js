@@ -457,6 +457,12 @@ function extractPageContextAsync(callback) {
     // ── Save original scroll position ────────────────────────
     var origScrollTop  = scrollEl ? scrollEl.scrollTop  : window.scrollY;
     var origScrollLeft = scrollEl ? scrollEl.scrollLeft : window.scrollX;
+    var originalFocus = document.activeElement;
+    // Site smooth scrolling otherwise keeps animating while the next sweep step runs.
+    var scrollStyle = document.createElement('style');
+    scrollStyle.textContent = '* { scroll-behavior: auto !important; scroll-snap-type: none !important; overflow-anchor: none !important; }';
+    document.documentElement.appendChild(scrollStyle);
+    var restoreTimer = setTimeout(function() { scrollStyle.remove(); }, 180000);
 
     // ── Helpers ───────────────────────────────────────────────
     function getScrollTop() {
@@ -1170,7 +1176,7 @@ function extractPageContextAsync(callback) {
             });
 
             try {
-                cb.focus();
+                cb.focus({preventScroll:true});
                 // react-select opens on ArrowDown; native ARIA opens on it too.
                 ['keydown', 'keyup'].forEach(function(type) {
                     cb.dispatchEvent(new KeyboardEvent(type, {
@@ -1208,12 +1214,15 @@ function extractPageContextAsync(callback) {
 
     function finalize() {
         // Restore original scroll position so page looks unchanged to the user
+        if (originalFocus && originalFocus.isConnected) originalFocus.focus({preventScroll:true});
         if (scrollEl) {
             scrollEl.scrollTop  = origScrollTop;
             scrollEl.scrollLeft = origScrollLeft;
         } else {
             window.scrollTo(origScrollLeft, origScrollTop);
         }
+        clearTimeout(restoreTimer);
+        scrollStyle.remove();
 
         // ── Assemble output ───────────────────────────────────
         var out = headerLines.slice();
@@ -1329,12 +1338,12 @@ async function getPositions(callback) {
         await new Promise(function(r) { requestAnimationFrame(function() { requestAnimationFrame(r); }); });
     };
     var restore = function() {
-        style.remove();
         changed.forEach(function(item) {
             if (item[1] === null) item[0].removeAttribute('style');
             else item[0].setAttribute('style', item[1]);
         });
         target.scrollTo(origX, origY);
+        style.remove();
     };
     // Popup closure or messaging failure must not leave the page modified.
     var expired = false;

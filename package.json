@@ -12,9 +12,10 @@
     "test:unit": "node verify-links.cjs && node verify-provider.cjs && node verify-exports.cjs",
     "test:dom": "node verify-privacy.cjs && node verify-capture.cjs && node verify-youtube.cjs",
     "test:permissions": "node verify-permissions.cjs",
+    "test:action": "node verify-action.cjs",
     "test:e2e": "node verify-e2e.cjs",
     "test:youtube-live": "node verify-youtube-live.cjs",
-    "test": "npm run test:unit && npm run test:dom && npm run test:permissions && npm run test:e2e",
+    "test": "npm run test:unit && npm run test:dom && npm run test:permissions && npm run test:action && npm run test:e2e",
     "package": "node scripts/package.cjs"
   },
   "devDependencies": {

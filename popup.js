@@ -305,7 +305,7 @@ function makeHistoryItem(entry) {
     item.addEventListener('click', function() {
       var text=settings.autoRedact !== false ? SkimPrivacy.redactText(entry.text) : entry.text;
       if(entry.truncated)text+='\nCAPTURE WARNING: this saved history entry was truncated.';
-      navigator.clipboard.writeText(text).then(function() {
+      CaptureAPI.copyTextToClipboard(text).then(function() {
         setBadge('done', 'Copied');
       }).catch(function() {setBadge('err','Copy failed');});
     });
@@ -425,7 +425,7 @@ function prepareTextExport(text) {
 }
 function exportText(copy) {
   var text = settings.autoRedact !== false ? SkimPrivacy.redactText(capturedText) : capturedText;
-  if (copy) return navigator.clipboard.writeText(text).then(function() {
+  if (copy) return CaptureAPI.copyTextToClipboard(text).then(function() {
     $('text-status').textContent = 'Copied full captured text';
   }).catch(function() { $('text-status').textContent = 'Copy failed. Use Save text.'; });
   SkimExports.download(new Blob([text], {type:'text/plain;charset=utf-8'}), 'skim-capture-' + Date.now() + '.txt');
