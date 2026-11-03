@@ -1,78 +1,38 @@
 # Skim
 
-Capture web context. Review what you share.
+**Give your AI the page you're on.**
 
-Skim is a local-first Chrome extension for copying page text, UI code, available YouTube transcripts and full-page screenshots. Screenshots copy automatically and stay available for masking and manual exports. No account, build step or AI provider is required.
+Skim saves you from copying a page piece by piece. Click Skim, then paste the captured context into your AI chat or coding agent.
 
-[![Test and package](https://github.com/kkamali04/skim/actions/workflows/test.yml/badge.svg)](https://github.com/kkamali04/skim/actions/workflows/test.yml)
+![A web page becomes clipboard context that you paste into your AI agent.](docs/images/skim-workflow.png)
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/popup-dark.png">
-  <img src="docs/images/popup-light.png" width="460" alt="Skim's fixed-size purple popup with text preview, copy, save and screenshot controls">
-</picture>
+[Install Skim](docs/install.md) · [Use Skim](docs/usage.md) · [What Skim can read](docs/coverage.md)
 
-## What it does
+## Ask better questions with the page attached
 
-- **Page text:** structured text, links, form controls, permitted frame content and open shadow DOM, with capture coverage warnings.
-- **Page code:** UI markup, accessible CSS, computed styles and asset references for development handoffs.
-- **Screenshots to clipboard:** stitch full pages or a main scroll pane and copy automatically. Add opaque masks by dragging or keyboard coordinates, undo masks, then copy the edited image again or save manually.
-- **Complete captured-output export:** preview and save the current text without the history preview cap; save one PNG or a ZIP containing every reviewed screenshot part.
-- **YouTube transcripts:** read the native transcript when YouTube makes it available, preserving timestamps and links. Live-site limitations are documented below.
-- **Comfortable controls:** consistent local SVGs, purple light/dark themes, keyboard-accessible history and a fixed 460 × 400 frame with internal scrolling.
+| You want to… | Give your agent the context and ask… |
+| --- | --- |
+| Understand an article or product page | "Compare the options and explain the tradeoffs." |
+| Work through a form | "Explain these fields and the available choices." |
+| Fix or rebuild a web interface | "Use this page code and screenshot as a reference." |
+| Learn from a video | "Turn this transcript into notes with timestamps." |
 
-## Install
+Page text gives your agent details and links. A screenshot shows the layout. Page code supplies markup and styles. Available YouTube transcripts let you work with the video's words.
 
-1. Download the ZIP from [Releases](https://github.com/kkamali04/skim/releases), then extract it to a permanent folder. Or clone this repository.
-2. Open `chrome://extensions`, enable **Developer mode**, and choose **Load unpacked**.
-3. Select the extracted folder containing `manifest.json`.
-4. Pin Skim from Chrome's Extensions menu. Open a normal web page and click Skim, or use **Alt+Shift+P**.
+You choose what to capture and where to paste it. No account or AI API key is required.
 
-Keep the popup open during capture. Opening it runs the configured default action. Text and screenshots copy when capture finishes; paste with Ctrl+V. Reload the extension from Chrome's extension page after updating its files. Skim is currently distributed as unpacked source, not a Chrome Web Store listing.
+## Keep control of what you share
 
-## A typical workflow
+Capture runs locally. Screenshots copy automatically, with no automatic file downloads or screenshot cache. AI summaries are optional and off by default.
 
-Click Skim on a page, inspect the text preview, then paste into your AI app, notes or document. **Save text** downloads the entire captured output; it does not remove extraction limits or recover inaccessible content. Change **Settings → Copy mode** to Code when you want markup/CSS.
+Review the capture before sharing it. Redaction is best effort, and hidden or restricted content can be missing. Read the [coverage limits](docs/coverage.md) and [privacy details](docs/privacy.md).
 
-Choose **Take Screenshot** to copy the complete image automatically. The preview stays open for edits. After adding masks, use **Copy full screenshot again** to update the clipboard; multipart captures also offer **Copy this part**, **Save this part · PNG** and **Save all reviewed parts · ZIP**. The ZIP includes every part with its individual masks. Automatic redaction is best effort and does not scan images with OCR. Extremely large images that exceed the combined clipboard canvas budget show an explicit failure and retain per-part copy/ZIP; Skim does not silently copy only the first part.
+## Release status
 
-Captures are clipboard-only by default: no automatic downloads or persistent screenshot cache. The preview is discarded when the popup closes. Optional **Save text history** keeps 20 entries by default for 14 days, with a 100,000-character cap and explicit truncation warnings. Expired entries are removed on read and by an hourly local cleanup alarm while Chrome runs; missed cleanup runs when Chrome resumes. Turning history off clears cached text. This update resets the former default-on history policy and clears that cache while preserving configuration and provider keys. Files you explicitly save remain where you saved them.
+**1.2.1 is a release candidate.** Ten public-site cases passed. Final installed-toolbar acceptance is pending. Skim does not promise to capture every website.
 
-Native select options and supported ARIA combobox choices are captured without selecting values. Unreadable menus produce coverage warnings. Labelled textareas retain up to 12,000 characters with explicit truncation; hidden/unloaded or virtualized choices may still be unavailable.
+[![Tests](https://github.com/kkamali04/skim/actions/workflows/test.yml/badge.svg)](https://github.com/kkamali04/skim/actions/workflows/test.yml)
 
-## Why is AI an on/off setting?
+Developing Skim? See [Contributing](CONTRIBUTING.md), [Testing](docs/testing.md), and the [changelog](docs/changelog.md).
 
-AI summarization is optional compression before text is copied. Leave it **off** to capture locally and paste into any AI app yourself. Turn it **on** only if you want Skim to send captured page text to the selected provider using your API key. Charges and provider retention policies may apply.
-
-Moonshot, Z.ai and OpenRouter are optional presets. Listing their hosts in the manifest does not grant access on installation. Capture, redaction, screenshots and exports require no AI provider.
-
-Configure an HTTPS OpenAI-compatible base URL, model and key in **Settings → AI summarization**. Presets are editable starting points, not a promise of model availability or account entitlement. The **Test provider** button sends a small test prompt and may be billable. Chrome's host permission is separate from the summarization toggle. Turning AI off stops automatic requests but does not revoke an already granted Chrome permission.
-
-Changing provider/base URL clears the saved key and turns AI off. If summarization fails, Skim copies raw captured text and displays a failure warning. AI summaries can omit information; choose local capture when exact captured text matters. Screenshot, code and transcript captures do not use this summarization path. Read [Privacy](PRIVACY.md) before using it with sensitive pages.
-
-## Limits and current status
-
-- Chrome restricts internal pages, its Web Store and some documents. Cross-origin frames, closed shadow roots, canvas/video and inaccessible stylesheets may be unavailable.
-- Infinite, virtualized, animated and changing layouts can yield incomplete captures. Large screenshots split into parts; nested layouts capture the main scroll pane and may omit floating overlays.
-- Exported text reports coverage and truncation. Redaction recognizes common patterns, not every possible secret. Review before sharing.
-- **YouTube depends on native transcript availability.** Skim supports the current and legacy transcript layouts. On November 2, 2026, the current layout was verified on a live public video (110 segments, 0:07–15:01). Some videos/profiles still return HTTP 400 or show site-access/ad-blocker restrictions; Skim reports failure instead of bypassing those restrictions or silently substituting page text.
-- Automated browser tests use an isolated unpacked extension. Actual installed-toolbar gestures and provider permission prompts still require verification in the user's profile. See [Testing](TESTING.md) for exact evidence boundaries.
-- **1.2.1 remains a release candidate.** Installed-profile testing exposed clipboard focus failures, scrolling jitter and incorrect native popup sizing. Repairs have automated regressions; installed-profile acceptance is still required before a stable release.
-
-## Develop
-
-Requires Node 22+ for development checks. The extension itself has no runtime package dependencies.
-
-```sh
-npm ci
-npx playwright install chromium
-npm test
-npm run package
-```
-
-The package command creates `dist/skim-1.2.1.zip` from an explicit runtime-file list. Tests never need a real provider key. GitHub Actions runs the deterministic suite and packages the extension on pushes and pull requests. See [the workflow](.github/workflows/test.yml).
-
-See [Contributing](CONTRIBUTING.md), [Testing](TESTING.md), [Privacy](PRIVACY.md), [Security](SECURITY.md) and [Changes](CHANGES.md).
-
-## Credits and license
-
-Independent derivative of Peter Coles' [full-page-screen-capture-chrome-extension](https://github.com/mrcoles/full-page-screen-capture-chrome-extension), under the preserved [MIT license](LICENSE). UI icons: Lucide/Feather. Typography: Manrope. Full licenses and pinned asset sources are in [Third-party notices](THIRD_PARTY_NOTICES.md).
+Independent derivative of Peter Coles' [full-page capture extension](https://github.com/mrcoles/full-page-screen-capture-chrome-extension). [MIT license](LICENSE) · [Third-party notices](docs/third-party-notices.md).

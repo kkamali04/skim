@@ -2,8 +2,8 @@ const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path'),asse
 let granted=false, calls=0;
 const sandbox={URL,AbortController,setTimeout,clearTimeout,window:{},chrome:{permissions:{contains:async()=>granted}},fetch:async()=>{calls++;return {ok:true,json:async()=>({choices:[{message:{content:'Safe summary'}}]})};}};
 vm.createContext(sandbox);
-vm.runInContext(fs.readFileSync(path.join(__dirname,'privacy.js'),'utf8'),sandbox);
-vm.runInContext(fs.readFileSync(path.join(__dirname,'api.js'),'utf8'),sandbox);
+vm.runInContext(fs.readFileSync(path.join(__dirname,'..','extension','privacy.js'),'utf8'),sandbox);
+vm.runInContext(fs.readFileSync(path.join(__dirname,'..','extension','api.js'),'utf8'),sandbox);
 const summarize=baseUrl=>new Promise(resolve=>sandbox.window.CaptureAPI.summarizeViaLLM('Fixture',{key:'dummy-key',baseUrl,model:'fixture'},(text,error)=>resolve({text,error})));
 (async()=>{
  assert.match((await summarize('https://example.com/v1')).error,/Enable provider access/);
@@ -26,7 +26,7 @@ const summarize=baseUrl=>new Promise(resolve=>sandbox.window.CaptureAPI.summariz
  assert.equal(failedPing.ok,false);assert.match(failedPing.detail,/Timed out after 15s/,'Provider test deadline must include reading an error body');
  const popup={document:{addEventListener(){}},console};
  vm.createContext(popup);
- vm.runInContext(fs.readFileSync(path.join(__dirname,'popup.js'),'utf8'),popup);
+ vm.runInContext(fs.readFileSync(path.join(__dirname,'..','extension','popup.js'),'utf8'),popup);
  assert.equal(popup.DEFAULTS.historyEnabled,false,'Captures must be clipboard-only by default');
  popup.saveSettings=popup.syncSettingsUI=popup.updateProfileStatus=()=>{};
  const original={...popup.DEFAULTS,summaryEnabled:true,summaryKey:'synthetic-old-key',openrouterKey:'synthetic-legacy-key'};

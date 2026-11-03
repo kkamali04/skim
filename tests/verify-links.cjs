@@ -11,7 +11,7 @@ const anchors = [anchor('https://example.com/job'),
     anchor('https://example.com/icon', '  ', ' Accessible\n title '),
     anchor('javascript:alert(1)', 'Unsafe'), anchor('data:text/plain,test', 'Data'),
     ...Array.from({length: 45}, (_, i) => anchor('https://example.com/' + i, 'Job ' + i))];
-const source = name => fs.readFileSync(path.join(__dirname, name), 'utf8');
+const source = name => fs.readFileSync(path.join(__dirname,'..','extension',name), 'utf8');
 const page = source('page.js');
 const start = page.indexOf("        function collectLink(a)");
 const end = page.indexOf("        root.querySelectorAll('img[src]')", start);

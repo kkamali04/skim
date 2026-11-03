@@ -2,20 +2,20 @@
   "name": "skim-browser-capture",
   "version": "1.2.1",
   "private": true,
-  "description": "Local-first page text, code and reviewed screenshot capture for Chrome",
+  "description": "Give AI agents context from the page you are on.",
   "license": "MIT",
   "repository": "github:kkamali04/skim",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "test:unit": "node verify-links.cjs && node verify-provider.cjs && node verify-exports.cjs",
-    "test:dom": "node verify-privacy.cjs && node verify-capture.cjs && node verify-youtube.cjs",
-    "test:permissions": "node verify-permissions.cjs",
-    "test:action": "node verify-action.cjs",
-    "test:e2e": "node verify-e2e.cjs",
-    "test:youtube-live": "node verify-youtube-live.cjs",
-    "test:sites-live": "node verify-sites.cjs",
+    "test:unit": "node tests/verify-links.cjs && node tests/verify-provider.cjs && node tests/verify-exports.cjs",
+    "test:dom": "node tests/verify-privacy.cjs && node tests/verify-capture.cjs && node tests/verify-youtube.cjs",
+    "test:permissions": "node tests/verify-permissions.cjs",
+    "test:action": "node tests/verify-action.cjs",
+    "test:e2e": "node tests/verify-e2e.cjs",
+    "test:youtube-live": "node tests/verify-youtube-live.cjs",
+    "test:sites-live": "node tests/verify-sites.cjs",
     "test": "npm run test:unit && npm run test:dom && npm run test:permissions && npm run test:action && npm run test:e2e",
     "package": "node scripts/package.cjs"
   },

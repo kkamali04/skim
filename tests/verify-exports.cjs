@@ -1,6 +1,6 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const ctx={Blob,TextEncoder,Uint8Array,DataView};vm.createContext(ctx);
-vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'exports.js'),'utf8'),ctx);
+vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'..','extension','exports.js'),'utf8'),ctx);
 (async()=>{
  const files=[{name:'part-1.png',blob:new Blob(['123456789'])},{name:'part-2.png',blob:new Blob([new Uint8Array([0,1,255,0])])}];
  const zip=Buffer.from(await (await ctx.SkimExports.zip(files)).arrayBuffer());

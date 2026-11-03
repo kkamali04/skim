@@ -1,11 +1,29 @@
-# Contributing
+# Develop Skim
 
-Use Node 22 or later. Install development tools with `npm ci`, then `npx playwright install chromium`. Run `npm test` before proposing changes and `npm run package` to create an unpacked-extension ZIP in `dist/`.
+Use Node 22 or later. Run these commands from the repository root:
 
-The extension has no build step or runtime package dependencies. Load the repository root through Chrome's **Load unpacked** action. Reload the extension after editing source files.
+```sh
+npm ci
+npx playwright install chromium
+npm test
+npm run package
+```
 
-For bug fixes, reproduce the failure and add a focused regression check to the existing scripts. Keep automatic privacy checks and human review separate. Do not replace native Chrome API tests with mocks and describe them as installed-toolbar verification.
+Load **`extension/`** with Chrome's **Load unpacked** action. Reload the extension after source edits. There is no runtime build step or package dependency.
 
-Report the OS, Chrome version, Skim version, action used, expected result and observed result. Prefer a minimal public reproduction page with synthetic data. Never attach private captures, credentials, cookies, account pages or unsanitized logs.
+| Folder | Contents |
+| --- | --- |
+| `extension/` | Installable Chrome files and bundled assets. |
+| `tests/` | Regression checks and opt-in live-site checks. |
+| `scripts/` | Release packaging. |
+| `docs/` | User guides, reference pages, and artwork. |
 
-See [testing evidence and limitations](TESTING.md) and [security reporting](SECURITY.md).
+To inspect the layout, run `git ls-tree --name-only HEAD`.
+
+For a bug fix, reproduce the failure before changing code. Add a regression to an existing check, then run the affected tests and full suite.
+
+Keep test boundaries clear. A mocked response, a disposable browser, and a click in the installed toolbar prove different things. See [Testing](docs/testing.md).
+
+For bug reports, include the OS, Chrome version, Skim version, action, expected result, and observed result. Use a public reproduction with synthetic data. Exclude private captures, cookies, credentials, and unsanitized logs.
+
+Follow [Release Skim](docs/releasing.md) for packaging and [Security reporting](SECURITY.md) for vulnerabilities.
