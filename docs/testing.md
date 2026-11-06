@@ -15,12 +15,12 @@ npm run package
 | --- | --- |
 | `verify-links.cjs` | Complete labels, safe URLs, duplicates, and frame links. |
 | `verify-provider.cjs` | Permission denial, HTTPS, timeouts, key clearing, and typed settings. Provider responses are synthetic. |
-| `verify-exports.cjs` | ZIP contents, bytes, CRC32, directory records, and invalid input. |
+| `verify-exports.cjs` | ZIP contents, bytes, CRC32, directory records, invalid input, and safe PNG reuse. |
 | `verify-privacy.cjs` | Redaction, repeated records, form values, shadow fields, portal cleanup, and clipped masks. |
-| `verify-capture.cjs` | Scroll orchestration, sticky layout, restoration, and tile failures. Tile transport is simulated. |
+| `verify-capture.cjs` | Scroll orchestration, no duplicate initial wait, sticky layout, restoration, and tile failures. Tile transport is simulated. |
 | `verify-youtube.cjs` | Three native transcript layouts, timestamps, links, and scroll restoration. |
 | `verify-permissions.cjs` | The exact production manifest denies capture before permission. Real alarms expire old history. |
-| `verify-action.cjs` | A native popup, fixed 460 × 400 geometry, scroll restoration, unfocused text copy, and automatic PNG clipboard readback. |
+| `verify-action.cjs` | A native popup, fixed 460 × 400 geometry, scroll restoration, unfocused text copy, automatic PNG clipboard readback, screenshot timing, and actions before the image. |
 | `verify-e2e.cjs` | Real extension APIs for text, code, stitching, masks, multipart PNGs, ZIP exports, history, and transcript fixtures. |
 
 GitHub Actions runs the deterministic suite and packages the extension. No real provider key is required.

@@ -2,6 +2,8 @@
 
 ## 1.2.1 release candidate
 
+- Put screenshot actions above the preview. Avoid a duplicate starting-position wait and reuse unedited, already-redacted PNGs for full-image copy and ZIP export. Re-encode parts with manual masks.
+
 - Separate installable files in `extension/`, checks in `tests/`, and guides in `docs/`. Add a concise README and workflow infographic.
 - Copy complete screenshots automatically. Preserve masks, multipart coordinates, part copy, PNG exports, and ZIP exports. Oversized copies fail explicitly and preserve the previous clipboard.
 - Make captures clipboard-only by default. Clear the former default-on history cache. Optional text history expires after 14 days through local alarms and read-time cleanup.

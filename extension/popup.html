@@ -63,18 +63,18 @@
 <div id="review" class="panel">
   <div class="body">
     <div class="eyebrow">Ready to paste</div><h1>Screenshot preview</h1>
+    <div class="button-row"><button class="btn btn-primary" id="review-copy-all"><svg aria-hidden="true"><use href="assets/icons.svg#copy"></use></svg>Copy full image</button><button class="btn btn-surface" id="review-download"><svg aria-hidden="true"><use href="assets/icons.svg#download"></use></svg>Save part · PNG</button></div>
+    <div class="button-row"><button class="btn btn-surface" id="review-copy"><svg aria-hidden="true"><use href="assets/icons.svg#copy"></use></svg>Copy this part</button><button class="btn btn-surface" id="review-download-all"><svg aria-hidden="true"><use href="assets/icons.svg#download"></use></svg><span id="review-all-label">Save all reviewed parts · ZIP</span></button></div>
     <div class="s-hint">Copied automatically after capture. Add masks and copy again to apply edits. Redaction is best-effort; images are not OCR-scanned. Nested pages capture the main scroll pane.</div>
     <label>Part <select id="review-part" aria-label="Screenshot part"></select></label>
-    <div class="review-viewport">
-      <canvas id="review-canvas" aria-label="Screenshot masking canvas" style="display:block;width:100%;touch-action:none;cursor:crosshair"></canvas>
-    </div>
+
     <div id="review-status" role="status"></div>
     <details><summary><svg aria-hidden="true"><use href="assets/icons.svg#chevron-down"></use></svg>Add a mask by coordinates</summary><div class="s-hint">Pixel coordinates in this part. Use the fields or drag on the image.</div><form id="mask-form"><div class="mask-fields"><label>X<input class="s-input" id="mask-x" type="number" min="0" step="1" value="0" required></label><label>Y<input class="s-input" id="mask-y" type="number" min="0" step="1" value="0" required></label><label>Width<input class="s-input" id="mask-width" type="number" min="1" step="1" value="100" required></label><label>Height<input class="s-input" id="mask-height" type="number" min="1" step="1" value="100" required></label></div><button class="btn btn-surface" type="submit"><svg aria-hidden="true"><use href="assets/icons.svg#square"></use></svg>Add opaque mask</button></form></details>
     <button class="btn btn-surface" id="review-undo"><svg aria-hidden="true"><use href="assets/icons.svg#undo-2"></use></svg>Undo mask</button>
-    <button class="btn btn-primary" id="review-copy-all"><svg aria-hidden="true"><use href="assets/icons.svg#copy"></use></svg>Copy full screenshot again</button>
-    <button class="btn btn-surface" id="review-copy"><svg aria-hidden="true"><use href="assets/icons.svg#copy"></use></svg>Copy this part</button>
-    <button class="btn btn-surface" id="review-download"><svg aria-hidden="true"><use href="assets/icons.svg#download"></use></svg>Save this part · PNG</button><button class="btn btn-surface" id="review-download-all"><svg aria-hidden="true"><use href="assets/icons.svg#download"></use></svg><span id="review-all-label">Save all reviewed parts · ZIP</span></button>
     <button class="btn btn-ghost" id="review-cancel">Cancel</button>
+    <div class="review-viewport">
+      <canvas id="review-canvas" aria-label="Screenshot masking canvas" style="display:block;width:100%;touch-action:none;cursor:crosshair"></canvas>
+    </div>
   </div>
 </div>
 <!-- ═══ HISTORY ═══════════════════════════════════════════ -->

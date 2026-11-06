@@ -559,7 +559,7 @@ async function openReview(blobs, layout) {
     var top=0;
     for (var i=0;i<blobs.length;i++) {
       var image=await createImageBitmap(blobs[i]);
-      reviewParts.push({image:image,masks:[],bounds:layout && layout[i] || {x:0,y:top,width:image.width,height:image.height}});
+      reviewParts.push({image:image,blob:blobs[i],masks:[],bounds:layout && layout[i] || {x:0,y:top,width:image.width,height:image.height}});
       top+=image.height;
     }
     reviewIndex = 0;
@@ -615,6 +615,10 @@ async function exportReview(download) {
 async function reviewedFiles() {
     var files = [];
     for (var i = 0; i < reviewParts.length; i++) {
+      if (!reviewParts[i].masks.length) {
+        files.push({name:'skim-part-' + (i+1) + '-of-' + reviewParts.length + '.png',blob:reviewParts[i].blob});
+        continue;
+      }
       var canvas = document.createElement('canvas'); drawReviewedPart(reviewParts[i], canvas);
       var blob = await new Promise(function(resolve) { canvas.toBlob(resolve, 'image/png'); });
       if (!blob) throw new Error('PNG encoding failed for part ' + (i+1));

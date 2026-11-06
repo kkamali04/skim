@@ -1455,7 +1455,8 @@ async function getPositions(callback) {
         for (var i = 0; i < positions.length; i++) {
             if(expired)throw new Error('Capture exceeded three minutes.');
             target.scrollTo(positions[i][0], positions[i][1]);
-            await settle();
+            // The reset above already settled the first tile at (0, 0).
+            if (i > 0) await settle();
             var current = crop();
             if (target.scrollHeight !== fullHeight || target.scrollWidth !== fullWidth ||
                 current.width !== initial.width || current.height !== initial.height)

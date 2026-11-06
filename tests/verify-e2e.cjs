@@ -217,6 +217,7 @@ let context;
  assert.equal(automaticDownloads,0,'Screenshot capture must not download files automatically');
  assert.deepEqual(await p.evaluate(async()=>{const state=await chrome.storage.local.get(null);return {history:state.skim_history||[],imageKeys:Object.keys(state).filter(k=>/screenshot|skim_cache/.test(k))};}),{history:[],imageKeys:[]},'Clipboard-only capture leaves no persistent capture history or screenshot cache');
  assert.equal(await page.locator('main').evaluate(el=>el.scrollTop),0);
+ await p.locator('.review-viewport').evaluate(el=>el.scrollIntoView({block:'start'}));
  const canvas=p.locator('#review-canvas'),box=await canvas.boundingBox();
  await p.mouse.move(box.x+30,box.y+30);await p.mouse.down();await p.mouse.move(box.x+110,box.y+65);await p.mouse.up();
  assert.equal(await p.evaluate(()=>reviewParts[0].masks.length),1);

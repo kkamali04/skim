@@ -20,5 +20,18 @@ vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'..','extens
  assert.equal(offset,end,'Complete central directory');
  const empty=Buffer.from(await(await ctx.SkimExports.zip([])).arrayBuffer());assert.equal(empty.length,22);
  await assert.rejects(ctx.SkimExports.zip([{name:'x'.repeat(65536),blob:new Blob([])}]),/size limit/);
+ const popupSource=fs.readFileSync(require('node:path').join(__dirname,'..','extension','popup.js'),'utf8');
+ const original=new Blob(['original PNG']),masked=new Blob(['masked PNG']);let encodes=0;
+ const review={reviewParts:[{blob:original,masks:[]}],document:{createElement(){return {toBlob(cb){encodes++;cb(masked);}};}},drawReviewedPart(){}};
+ vm.createContext(review);
+ vm.runInContext(popupSource.slice(popupSource.indexOf('async function reviewedFiles()'),popupSource.indexOf('async function copyAllReviewed()')),review);
+ assert.equal((await review.reviewedFiles())[0].blob,original,'Unedited parts reuse the source PNG without encoding again');
+ assert.equal(encodes,0);
+ review.reviewParts[0].masks.push({x:0,y:0,w:1,h:1});
+ assert.equal((await review.reviewedFiles())[0].blob,masked,'Manual masks require fresh encoding');
+ assert.equal(encodes,1);
+ review.reviewParts[0].masks=[];
+ assert.equal((await review.reviewedFiles())[0].blob,original,'Undoing every mask safely reuses the original');
+ console.log('PASS screenshot export: reuse unedited PNGs and re-encode manual masks');
  console.log('PASS ZIP: every file, byte content, CRC32, central directory, empty archive and name limit');
 })().catch(e=>{console.error(e);process.exitCode=1;});

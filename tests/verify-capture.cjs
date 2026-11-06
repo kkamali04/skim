@@ -47,6 +47,15 @@ const assert = require('node:assert/strict');
   assert.equal(sticky.first.field.y,sticky.original.y,'Removing sticky behavior must not move a child field into the header');
   assert.equal(sticky.style||'','','Remove temporary sticky styles');
   assert.deepEqual(await page.locator('aside').evaluate(el=>({position:getComputedStyle(el).position,top:getComputedStyle(el).top})),{position:'sticky',top:'50px'},'Restore original sticky behavior and offsets');
+  await page.setContent('<style>body{margin:0}</style><p>One viewport</p>');
+  const waits=await page.evaluate(async()=>{
+    chrome.runtime.sendMessage=(data,cb)=>cb({ok:true});
+    const original=setTimeout;let count=0;
+    window.setTimeout=function(fn,ms,...args){if(ms===100)count++;return original(fn,ms,...args);};
+    try {const result=await new Promise(resolve=>{CAPTURE_DELAY=1;getPositions(resolve);});if(!result.ok)throw Error(result.error);return count;}
+    finally {window.setTimeout=original;}
+  });
+  assert.equal(waits,2,'Warmup and first-tile settling must not wait twice at the same starting position');
   console.log('PASS: nested-pane crop, full height, completion and scroll restoration');
   console.log('PASS: failed tile reports failure and restores scroll position');
  } finally { await browser.close(); }
