@@ -17,7 +17,7 @@ const selected=process.argv.slice(2).filter(a=>!a.startsWith('--'));
 for(const id of selected)assert.ok(sites.some(s=>s.id===id),'Unknown site '+id);
 const out=path.join(__dirname,'..','test-results','live-sites');fs.mkdirSync(out,{recursive:true});
 const temporary=fs.mkdtempSync(path.join(os.tmpdir(),'skim-sites-')),extension=path.join(temporary,'extension');fs.mkdirSync(extension);
-for(const name of ['manifest.json','background.js','api.js','privacy.js','page.js','youtube.js','popup.js','popup.html','popup.css','exports.js','icon16.png','icon48.png','icon128.png'])fs.copyFileSync(path.join(__dirname,'..','extension',name),path.join(extension,name));
+for(const name of ['manifest.json','background.js','api.js','privacy.js','page.js','youtube.js','products.js','popup.js','popup.html','popup.css','exports.js','icon16.png','icon48.png','icon128.png'])fs.copyFileSync(path.join(__dirname,'..','extension',name),path.join(extension,name));
 fs.cpSync(path.join(__dirname,'..','extension','assets'),path.join(extension,'assets'),{recursive:true});
 const manifest=JSON.parse(fs.readFileSync(path.join(extension,'manifest.json')));
 // Native openPopup does not grant activeTab. Only this disposable profile gets these test grants.

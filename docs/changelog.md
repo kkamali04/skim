@@ -2,6 +2,9 @@
 
 ## 1.2.1 release candidate
 
+- Show capture limits and partial-result reasons. Add an optional native transcript-language preference with explicit unavailable-track errors.
+- Add contextual product JSON downloads with redaction, captured page context, field provenance and missing-data warnings. Read standard Product metadata and whitelisted Alibaba product fields; do not claim complete AliExpress or Temu support.
+
 - Put screenshot actions above the preview. Avoid a duplicate starting-position wait and reuse unedited, already-redacted PNGs for full-image copy and ZIP export. Re-encode parts with manual masks.
 
 - Separate installable files in `extension/`, checks in `tests/`, and guides in `docs/`. Add a concise README and workflow infographic.

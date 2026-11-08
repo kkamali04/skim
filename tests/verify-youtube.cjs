@@ -19,6 +19,18 @@ const path=require('node:path'),assert=require('node:assert/strict');
    assert.equal(await page.locator('#pane').evaluate(el=>el.scrollTop),125,'Restore transcript scroll for '+kind);
    await page.close();
   }
+  const languagePage=await browser.newPage();
+  await languagePage.route('https://www.youtube.com/**',r=>r.fulfill({contentType:'text/html',body:`<ytd-transcript-renderer><div id="footer"><button aria-expanded="false" onclick="document.querySelector('#languages').hidden=!document.querySelector('#languages').hidden;this.setAttribute('aria-expanded',String(!document.querySelector('#languages').hidden))">English</button></div><div id="segments"><ytd-transcript-segment-renderer><span class="segment-timestamp">0:01</span><span class="segment-text">Hello</span></ytd-transcript-segment-renderer></div></ytd-transcript-renderer><ytd-menu-popup-renderer id="languages" role="menu" hidden><button role="menuitem" onclick="document.querySelector('#footer button').textContent='Spanish';document.querySelector('.segment-text').textContent='Hola';this.parentElement.hidden=true;document.querySelector('#footer button').setAttribute('aria-expanded','false')">Spanish</button></ytd-menu-popup-renderer>`}));
+  await languagePage.goto('https://www.youtube.com/watch?v=languages');
+  await languagePage.addScriptTag({path:path.join(__dirname,'..','extension','youtube.js')});
+  const switched=await languagePage.evaluate(()=>skimYouTubeTranscript('Spanish'));
+  assert.ok(switched.text?.includes('LANGUAGE: Spanish'),switched.error||'Requested language must be selected');
+  assert.ok(switched.text.includes('Hola'));
+  assert.equal(await languagePage.locator('#languages').isVisible(),false,'Close native language menu');
+  const unavailable=await languagePage.evaluate(()=>skimYouTubeTranscript('Unavailable'));
+  assert.match(unavailable.error,/language.*unavailable/i,'Never silently return another language');
+  assert.equal(await languagePage.locator('#languages').isVisible(),false,'Unavailable choice restores menu state');
+  await languagePage.close();
   console.log('PASS YouTube legacy and both view-model layouts: all timestamps, text, canonical links and scroll restoration');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

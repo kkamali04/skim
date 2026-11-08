@@ -48,8 +48,10 @@
       </div>
       <div class="card-meta" id="result-meta"></div>
     </div>
+    <div class="s-hint" id="capture-status" role="status"></div>
     <details id="preview-details"><summary><svg aria-hidden="true"><use href="assets/icons.svg#chevron-down"></use></svg>Preview captured text</summary><textarea id="text-preview" class="s-input mono" readonly aria-label="Full captured text" spellcheck="false"></textarea></details>
     <div class="button-row"><button class="btn btn-primary" id="btn-recopy"><svg aria-hidden="true"><use href="assets/icons.svg#copy"></use></svg>Copy again</button><button class="btn btn-surface" id="btn-download-text"><svg aria-hidden="true"><use href="assets/icons.svg#download"></use></svg>Save text</button></div>
+    <button class="btn btn-surface" id="btn-product" style="display:none"><svg aria-hidden="true"><use href="assets/icons.svg#download"></use></svg>Save product details · JSON</button>
     <div id="text-status" role="status"></div>
     <button class="btn btn-surface" id="btn-action2">
       <span id="btn-action2-icon" aria-hidden="true"><svg aria-hidden="true"><use href="assets/icons.svg#camera"></use></svg></span>
@@ -63,6 +65,7 @@
 <div id="review" class="panel">
   <div class="body">
     <div class="eyebrow">Ready to paste</div><h1>Screenshot preview</h1>
+    <div class="s-hint" role="status">Image captured · page or main scroll pane only. Clipboard status appears below.</div>
     <div class="button-row"><button class="btn btn-primary" id="review-copy-all"><svg aria-hidden="true"><use href="assets/icons.svg#copy"></use></svg>Copy full image</button><button class="btn btn-surface" id="review-download"><svg aria-hidden="true"><use href="assets/icons.svg#download"></use></svg>Save part · PNG</button></div>
     <div class="button-row"><button class="btn btn-surface" id="review-copy"><svg aria-hidden="true"><use href="assets/icons.svg#copy"></use></svg>Copy this part</button><button class="btn btn-surface" id="review-download-all"><svg aria-hidden="true"><use href="assets/icons.svg#download"></use></svg><span id="review-all-label">Save all reviewed parts · ZIP</span></button></div>
     <div class="s-hint">Copied automatically after capture. Add masks and copy again to apply edits. Redaction is best-effort; images are not OCR-scanned. Nested pages capture the main scroll pane.</div>
@@ -95,6 +98,7 @@
 <div class="s-row"><div><label class="s-name" for="set-default-action">On open</label><div class="s-hint">Start a fresh capture</div></div><select class="s-select" id="set-default-action"><option value="text">Copy text</option><option value="screenshot">Screenshot</option></select></div>
 <div class="s-row"><div><label class="s-name" for="set-copy-mode">Copy mode</label><div class="s-hint">Text or UI markup + CSS</div></div><select class="s-select" id="set-copy-mode"><option value="text">Text</option><option value="code">Code</option></select></div>
 <div class="s-row"><div><label class="s-name" for="set-youtube-transcript">YouTube transcripts</label><div class="s-hint">Try the native transcript on video pages</div></div><label class="toggle"><input type="checkbox" id="set-youtube-transcript" aria-label="YouTube transcripts"><span class="t-track"></span></label></div>
+<div class="s-row s-row-stack"><label class="s-name" for="set-transcript-language">Transcript language</label><div class="s-hint">Blank uses YouTube’s current language. Otherwise enter the exact menu label, such as English (auto-generated). An unavailable choice stops capture.</div><input id="set-transcript-language" class="s-input" type="text" maxlength="100" placeholder="Use YouTube’s current language"></div>
 <div class="s-row"><div><label class="s-name" for="set-capture-delay">Capture speed</label><div class="s-hint">Allow more time for page rendering</div></div><select class="s-select" id="set-capture-delay"><option value="150">Fast · 150ms</option><option value="300">Normal · 300ms</option><option value="500">Safe · 500ms</option><option value="800">Careful · 800ms</option></select></div></section>
 <section class="sec"><h2 class="sec-title">Privacy &amp; history</h2>
 <div class="s-row"><div><label class="s-name" for="set-autoredact">Auto-redact sensitive text</label><div class="s-hint">Best-effort masks for keys, SSNs, emails and cards. Review before sharing.</div></div><label class="toggle"><input type="checkbox" id="set-autoredact" aria-label="Auto-redact sensitive text"><span class="t-track"></span></label></div>
@@ -126,6 +130,7 @@
 <!-- ═══ ERROR ════════════════════════════════════════════ -->
 <div id="error-panel" class="panel">
   <div class="err-body">
+    <h1>Capture failed</h1>
     <div class="err-msg" id="error-msg">Capture failed.</div>
     <div class="err-hint">Keep this popup open during capture. Some pages restrict access; try the normal-page option for unavailable transcripts.</div>
     <button class="btn btn-surface" id="btn-retry">
@@ -147,6 +152,7 @@
 <div class="local-footer" id="privacy-state"><svg aria-hidden="true"><use href="assets/icons.svg#shield-check"></use></svg><span id="privacy-state-text">Local capture · AI off</span></div>
 <script src="exports.js"></script>
 <script src="privacy.js"></script>
+<script src="products.js"></script>
 <script src="api.js"></script>
 <script src="popup.js"></script>
 </body>

@@ -16,6 +16,7 @@ var DEFAULTS = {
   historyLimit:   20,
   autoRedact:     true,
   youtubeTranscript: true,
+  transcriptLanguage: '',
   // Text-extraction enhancers — all on by default. Toggle off if a page
   // produces noisy output and you want to isolate the bare CONTENT.
   includeButtons:   true,  // [BUTTON] entries in FORM section
@@ -225,6 +226,7 @@ function updateProfileStatus() {
 
 function syncSettingsUI() {
   $('set-youtube-transcript').checked = settings.youtubeTranscript !== false;
+  $('set-transcript-language').value = settings.transcriptLanguage || '';
   updateYouTubeUI();
   $('set-theme').value             = settings.theme;
   $('set-default-action').value    = settings.defaultAction;
@@ -373,6 +375,7 @@ function showPanel(id) {
   });
   var info = BADGE_MAP[id];
   if (info) setBadge(info[0], info[1] || (currentMode === 'text' ? 'Reading' : 'Capturing'));
+  if (id==='result' && /^Partial/.test($('capture-status').textContent))setBadge('err','Partial');
   $('btn-nav-history').classList.toggle('active', id === 'history');
   $('btn-nav-settings').classList.toggle('active', id === 'settings');
 }
@@ -431,8 +434,23 @@ function onTextSuccess(text) {
 }
 
 var capturedText = '';
+function captureStatus(text) {
+  text = String(text || '');
+  var warning = text.match(/^CAPTURE WARNING: (.+)$/m);
+  if (warning) return 'Partial capture · ' + warning[1];
+  if (/^COVERAGE: PARTIAL:/m.test(text) || /^UNPARSED SEGMENT OBSERVATIONS: [1-9]/m.test(text))
+    return 'Partial transcript · some segments could not be captured.';
+  if (/^== TRANSCRIPT ==$/m.test(text) && /^COVERAGE: Reached stable end/m.test(text))
+    return 'Transcript captured · reached panel end; not checked against audio.';
+  return 'Captured · limited to accessible page content. Hidden or unloaded details may be missing.';
+}
 function prepareTextExport(text) {
   capturedText = text; $('text-preview').value = text; $('text-status').textContent = '';
+  $('capture-status').textContent = captureStatus(text);
+  $('btn-product').style.display=isProductSite()?'flex':'none';
+  if(currentTab && !isProductSite())CaptureAPI.hasProductDetails(currentTab,function(found){
+    if(capturedText===text)$('btn-product').style.display=found?'flex':'none';
+  });
 }
 function exportText(copy) {
   var text = settings.autoRedact !== false ? SkimPrivacy.redactText(capturedText) : capturedText;
@@ -483,6 +501,21 @@ function startCopy() {
   else startTextCopy();
 }
 
+function isProductSite() {
+  var host=getHostname(currentTab && currentTab.url || '');
+  return /(^|\.)(alibaba\.com|aliexpress\.(com|us)|temu\.com|amazon\.(com|co\.uk)|ebay\.com|etsy\.com|walmart\.com|myshopify\.com)$/.test(host);
+}
+function saveProductDetails() {
+  var button=$('btn-product');button.disabled=true;
+  $('text-status').textContent='Reading product details…';
+  CaptureAPI.captureProductDetails(currentTab,function(text){
+    var product=JSON.parse(text);
+    product.pageContext=settings.autoRedact !== false?SkimPrivacy.redactText(capturedText):capturedText;
+    SkimExports.download(new Blob([JSON.stringify(product,null,2)],{type:'application/json;charset=utf-8'}),'skim-product-'+Date.now()+'.json');
+    $('text-status').textContent='Saved available product details · partial snapshot. Check coverage in the JSON.';
+    button.disabled=false;
+  },function(reason){$('text-status').textContent='Product export failed: '+reason;button.disabled=false;},settings.autoRedact !== false);
+}
 function isYouTubeVideo() {
   try {var u=new URL(currentTab.url);return /(^|\.)youtube\.com$/.test(u.hostname) &&
     (u.pathname==='/watch' && u.searchParams.has('v') || /^\/(shorts|live)\//.test(u.pathname));}
@@ -496,7 +529,7 @@ function startNormal() {if(settings.defaultAction==='screenshot')startCapture();
 function startTranscript() {
   currentMode='transcript';
   $('progress-label').textContent='Reading YouTube transcript…';showPanel('loading');
-  CaptureAPI.captureTranscript(currentTab,function(text){onTextSuccess(text);currentMode='transcript';$('result-label').textContent='Transcript copied';},errorHandler,settings.autoRedact !== false);
+  CaptureAPI.captureTranscript(currentTab,function(text){onTextSuccess(text);currentMode='transcript';$('result-label').textContent='Transcript copied';},errorHandler,settings.autoRedact !== false,settings.transcriptLanguage);
 }
 
 function startCodeCopy() {
@@ -649,6 +682,7 @@ async function downloadAllReviewed() {
 
 /* ── Init ────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', function() {
+  $('set-transcript-language').addEventListener('change',function(){settings.transcriptLanguage=this.value.trim();saveSettings();});
   $('set-youtube-transcript').addEventListener('change',function(){settings.youtubeTranscript=this.checked;saveSettings();updateYouTubeUI();});
   $('btn-youtube-alternate').addEventListener('click',function(){if(settings.youtubeTranscript !== false)startNormal();else startTranscript();});
   $('review-part').addEventListener('change',function(){reviewIndex=Number(this.value);renderReview();});
@@ -666,6 +700,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   $('review-canvas').addEventListener('pointercancel',function(){reviewDrag=null;});
 
+  $('btn-product').addEventListener('click',saveProductDetails);
   $('btn-close').addEventListener('click',       function() { window.close(); });
   $('btn-recopy').addEventListener('click', function() { exportText(true); });
   $('btn-download-text').addEventListener('click', function() { exportText(false); });

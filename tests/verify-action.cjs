@@ -3,7 +3,7 @@ const {chromium}=require('playwright');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const temporary=fs.mkdtempSync(path.join(os.tmpdir(),'skim-action-')),extension=path.join(temporary,'extension'),out=path.join(__dirname,'..','test-results');
 fs.mkdirSync(extension);fs.mkdirSync(out,{recursive:true});
-for(const name of ['manifest.json','background.js','api.js','privacy.js','page.js','youtube.js','popup.js','popup.html','popup.css','exports.js','icon16.png','icon48.png','icon128.png'])fs.copyFileSync(path.join(__dirname,'..','extension',name),path.join(extension,name));
+for(const name of ['manifest.json','background.js','api.js','privacy.js','page.js','youtube.js','products.js','popup.js','popup.html','popup.css','exports.js','icon16.png','icon48.png','icon128.png'])fs.copyFileSync(path.join(__dirname,'..','extension',name),path.join(extension,name));
 fs.cpSync(path.join(__dirname,'..','extension','assets'),path.join(extension,'assets'),{recursive:true});
 const manifest=JSON.parse(fs.readFileSync(path.join(extension,'manifest.json')));
 // openPopup() does not grant activeTab. Only this test copy gets screenshot permission and reads back its own clipboard writes.

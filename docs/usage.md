@@ -18,10 +18,10 @@ To save the current text, click **Save text**. The download contains the capture
 2. Wait for capture to finish. Skim copies the full image automatically.
 3. Inspect the preview before sharing it.
 4. To hide another area, drag a mask or use the keyboard coordinate controls.
-5. After an edit, click **Copy full screenshot again**.
+5. After an edit, click **Copy full image**.
 6. Paste the image into an app that accepts images.
 
-For a multipart capture, **Copy this part** copies one part. **Save this part · PNG** exports one file. **Save all reviewed parts · ZIP** exports every part with its masks.
+For a multipart capture, **Copy this part** copies one part. **Save part · PNG** exports one file. **Save all reviewed parts · ZIP** exports every part with its masks.
 
 If the full image exceeds the clipboard limit, use the part controls or ZIP. Skim reports the failure and preserves the previous clipboard.
 
@@ -30,6 +30,18 @@ If the full image exceeds the clipboard limit, use the part controls or ZIP. Ski
 To give an agent markup and styles, select **Settings → Copy mode → Code**, then capture the page again.
 
 On a YouTube video, Skim tries the native transcript by default. If the transcript fails, open **Show transcript** on YouTube and retry. **Skim page normally** is an explicit alternative.
+
+**Settings → Transcript language** is optional. Leave it blank for YouTube’s current language, or enter an exact native menu label. If the layout has no language picker, the requested track is unavailable, or it cannot finish loading, Skim stops and preserves your clipboard. It does not translate audio.
+
+## Check capture status
+
+The result shows known capture warnings. **Partial capture** names a detected gap. **Captured · limited** means accessible page content was collected, with hidden or unloaded details still outside its coverage. **Transcript captured** means the panel end was reached; captions are not checked against audio. Failed captures show a reason.
+
+## Save product context
+
+On recognized shopping pages, or pages with product metadata, **Save product details · JSON** downloads available prices, variants, specifications, supplier details and image links alongside the captured page context. Redaction follows your setting. The file includes missing fields and coverage warnings.
+
+This is a partial snapshot of the open product page, not a catalog crawl or a promise of every variant or review. Image files are not downloaded. Alibaba bootstrap data and standard Product metadata are supported; AliExpress and Temu require readable product data and may block access or require login. Their full-detail exports remain unverified.
 
 ## Choose what to retain
 

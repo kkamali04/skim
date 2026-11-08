@@ -1,4 +1,4 @@
-async function skimYouTubeTranscript() {
+async function skimYouTubeTranscript(preferredLanguage) {
     var url = new URL(location.href);
     if (!/(^|\.)youtube\.com$/.test(url.hostname) ||
         !(url.pathname === '/watch' && url.searchParams.has('v') || /^\/(shorts|live)\//.test(url.pathname)))
@@ -14,6 +14,40 @@ async function skimYouTubeTranscript() {
             if (!button) return {error:'Transcript control not available. Expand the video description or open Show transcript, then retry. No page text was copied.'};
             button.click();
             for (var wait=0;wait<150 && !segments().length;wait++) await sleep(200);
+        }
+        preferredLanguage = String(preferredLanguage || '').trim();
+        if (preferredLanguage.length > 100) return {error:'Transcript language label is too long.'};
+        if (preferredLanguage) {
+            var languageButton = document.querySelector('ytd-transcript-renderer #footer button, ytd-transcript-renderer ytd-menu-renderer button');
+            var normalize = function(t) {return String(t || '').replace(/\s+/g,' ').trim().toLowerCase();};
+            var label = function(el) {return el && (el.innerText || el.getAttribute('aria-label') || el.textContent);};
+            if (!languageButton) return {error:'Transcript language selection is unavailable in this YouTube layout.'};
+            if (normalize(label(languageButton)) !== normalize(preferredLanguage)) {
+                var itemSelector='ytd-menu-popup-renderer [role="menuitem"], ytd-menu-popup-renderer [role="menuitemradio"], tp-yt-paper-listbox [role="option"]';
+                var visibleItems=function(){return Array.from(document.querySelectorAll(itemSelector)).filter(function(el){return el.getClientRects().length && getComputedStyle(el).visibility!=='hidden';});};
+                var existingItems=new Set(visibleItems()), opened=languageButton.getAttribute('aria-expanded')!=='true';
+                var oldSegments=segments(), oldText=oldSegments.map(function(el){return el.textContent;}).join('\n');
+                try {
+                    if (opened) languageButton.click();
+                    var choice;
+                    for (var menuWait=0;menuWait<20 && !choice;menuWait++) {
+                        choice=visibleItems().find(function(el){return (!opened || !existingItems.has(el)) && normalize(label(el))===normalize(preferredLanguage);});
+                        if(!choice)await sleep(100);
+                    }
+                    if (!choice) return {error:'Transcript language unavailable: '+preferredLanguage+'. Use an exact label offered by YouTube, or clear the setting.'};
+                    choice.click();
+                    var changed=false;
+                    for(var languageWait=0;languageWait<150;languageWait++) {
+                        await sleep(200);
+                        var currentSegments=segments();
+                        if(normalize(label(languageButton))===normalize(preferredLanguage) && currentSegments.length &&
+                           (currentSegments.some(function(el){return oldSegments.indexOf(el)<0;}) || currentSegments.map(function(el){return el.textContent;}).join('\n')!==oldText)) {changed=true;break;}
+                    }
+                    if(!changed)return {error:'Transcript language did not finish loading. No text was copied.'};
+                } finally {
+                    if(opened && visibleItems().some(function(el){return !existingItems.has(el);}))languageButton.click();
+                }
+            }
         }
         var first = segments()[0];
         if (!first) return {error:'YouTube did not provide readable transcript segments within 30 seconds. The panel may still be loading, unavailable, or using an unsupported layout. No page text was copied.'};

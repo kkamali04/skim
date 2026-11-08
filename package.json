@@ -10,7 +10,7 @@
   },
   "scripts": {
     "test:unit": "node tests/verify-links.cjs && node tests/verify-provider.cjs && node tests/verify-exports.cjs",
-    "test:dom": "node tests/verify-privacy.cjs && node tests/verify-capture.cjs && node tests/verify-youtube.cjs",
+    "test:dom": "node tests/verify-privacy.cjs && node tests/verify-capture.cjs && node tests/verify-youtube.cjs && node tests/verify-products.cjs",
     "test:permissions": "node tests/verify-permissions.cjs",
     "test:action": "node tests/verify-action.cjs",
     "test:e2e": "node tests/verify-e2e.cjs",

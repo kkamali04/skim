@@ -3,7 +3,7 @@ const {chromium}=require('playwright');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const temporary=fs.mkdtempSync(path.join(os.tmpdir(),'skim-permissions-'));
 const extension=path.join(temporary,'extension');fs.mkdirSync(extension);
-for(const name of ['manifest.json','background.js','api.js','privacy.js','popup.html','popup.css','popup.js','exports.js','youtube.js','page.js','icon16.png','icon48.png','icon128.png'])fs.copyFileSync(path.join(__dirname,'..','extension',name),path.join(extension,name));
+for(const name of ['manifest.json','background.js','api.js','privacy.js','popup.html','popup.css','popup.js','exports.js','youtube.js','products.js','page.js','icon16.png','icon48.png','icon128.png'])fs.copyFileSync(path.join(__dirname,'..','extension',name),path.join(extension,name));
 fs.cpSync(path.join(__dirname,'..','extension','assets'),path.join(extension,'assets'),{recursive:true});
 fs.writeFileSync(path.join(extension,'permission-check.html'),'<script src="privacy.js"></script><script src="api.js"></script>');
 const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/html');res.end('<title>Skim permission fixture</title><p>Public synthetic fixture</p>');});

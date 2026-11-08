@@ -1,0 +1,18 @@
+const {chromium}=require('playwright'),assert=require('node:assert/strict'),path=require('node:path');
+(async()=>{const browser=await chromium.launch({headless:true});try{const page=await browser.newPage();
+ await page.route('https://example.com/**',r=>r.fulfill({contentType:'text/html',body:'<html></html>'}));
+ await page.goto('https://example.com');
+ await page.setContent(`<h1>Widget</h1><script type="application/ld+json">{broken</script><script type="application/ld+json">${JSON.stringify({'@graph':[{'@type':'ProductGroup',name:'Widget',description:'A widget',url:'https://example.com',brand:{name:'Brand'},image:['https://example.com/widget.png','javascript:alert(1)','https://user:password@example.com/image.png'],additionalProperty:[{name:'Material',value:'Steel'}],hasVariant:[{'@type':'Product',name:'Red widget',sku:'RED',color:'Red',offers:{'@id':'#offer'}}]},{'@type':'Offer','@id':'#offer',price:'12.50',priceCurrency:'USD',availability:'https://schema.org/InStock',seller:{name:'Shop'}}]})}</script>`);
+ await page.addScriptTag({path:path.join(__dirname,'..','extension','products.js')});
+ const product=await page.evaluate(()=>SkimProducts.extract());
+ assert.equal(product.title,'Widget');assert.equal(product.variants[0].sku,'RED');assert.equal(product.variants[0].offers[0].price,'12.50');assert.deepEqual(product.images,['https://example.com/widget.png']);assert.equal(product.specifications[0].value,'Steel');assert.ok(product.coverage.warnings.some(w=>/JSON-LD/.test(w)));assert.equal(product.coverage.status,'partial');
+ await page.evaluate(()=>{document.body.innerHTML='<h1>Alibaba widget</h1>';window.detailData={globalData:{product:{subject:'Alibaba widget',productId:'123',moq:10,price:{formatLadderPrice:'$2-$5',unitEven:'pieces',productLadderPrices:[{min:10,max:100,price:5}]},sku:{skuAttrs:[{name:'Color',values:[{name:'Red',image:'https://example.com/red.png'}]}],skuInfoMap:{red:{skuId:'r1',price:5}}},mediaItems:[{imageUrl:'https://example.com/a.png'}],productBasicProperties:[{attrName:'Material',attrValue:'Steel'}]},seller:{companyName:'Supplier'},account:{token:'DO-NOT-EXPORT'}}};});
+ const alibaba=await page.evaluate(()=>SkimProducts.extract());assert.equal(alibaba.title,'Alibaba widget');assert.equal(alibaba.minimumOrderQuantity,'10 pieces');assert.equal(alibaba.supplier,'Supplier');assert.equal(alibaba.variants[0].id,'r1');assert.ok(!JSON.stringify(alibaba).includes('DO-NOT-EXPORT'));
+ await page.evaluate(()=>{window.detailData.globalData.product.subject='Product '+ 'x'.repeat(20000)+' sk-proj-ABCDEFGHIJKLMNOPQRSTUVXYZ123456';});
+ const long=await page.evaluate(()=>SkimProducts.extract());assert.ok(long.title.endsWith('sk-proj-ABCDEFGHIJKLMNOPQRSTUVXYZ123456'),'Do not truncate sensitive strings before the extension redacts them');
+ await page.evaluate(()=>{delete window.detailData;document.body.innerHTML='<h1>News article</h1>';});
+ assert.match((await page.evaluate(()=>SkimProducts.extract())).error,/product/i,'Ordinary pages cannot produce fake product success');
+ await page.evaluate(()=>{document.body.innerHTML='<h1>Product catalog</h1><script type="application/ld+json">'+JSON.stringify([{'@type':'Product',name:'First',url:'https://example.com/first'},{'@type':'Product',name:'Second',url:'https://example.com/second'}])+'</script>';});
+ assert.match((await page.evaluate(()=>SkimProducts.extract())).error,/multiple|ambiguous/i,'Do not export an arbitrary recommended product');
+ console.log('PASS product context: JSON-LD graph/variants, malformed input, unsafe URLs, Alibaba whitelist, missing fields and ambiguity');
+ }finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

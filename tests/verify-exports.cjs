@@ -21,6 +21,12 @@ vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'..','extens
  const empty=Buffer.from(await(await ctx.SkimExports.zip([])).arrayBuffer());assert.equal(empty.length,22);
  await assert.rejects(ctx.SkimExports.zip([{name:'x'.repeat(65536),blob:new Blob([])}]),/size limit/);
  const popupSource=fs.readFileSync(require('node:path').join(__dirname,'..','extension','popup.js'),'utf8');
+ const statusContext={};vm.createContext(statusContext);
+ vm.runInContext(popupSource.slice(popupSource.indexOf('function captureStatus('),popupSource.indexOf('function prepareTextExport(')),statusContext);
+ assert.match(statusContext.captureStatus('ordinary page'),/limited/i,'Unknown coverage cannot be complete');
+ assert.match(statusContext.captureStatus('CAPTURE WARNING: main scroll limit reached'),/Partial/);
+ assert.match(statusContext.captureStatus('COVERAGE: Reached stable end of transcript panel; not verified against audio.\nUNPARSED SEGMENT OBSERVATIONS: 0\n== TRANSCRIPT =='),/Transcript captured/);
+ assert.match(statusContext.captureStatus('COVERAGE: Reached stable end of transcript panel\nUNPARSED SEGMENT OBSERVATIONS: 2\n== TRANSCRIPT =='),/Partial/);
  const original=new Blob(['original PNG']),masked=new Blob(['masked PNG']);let encodes=0;
  const review={reviewParts:[{blob:original,masks:[]}],document:{createElement(){return {toBlob(cb){encodes++;cb(masked);}};}},drawReviewedPart(){}};
  vm.createContext(review);

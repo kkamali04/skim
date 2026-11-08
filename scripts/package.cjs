@@ -1,7 +1,7 @@
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const root=path.resolve(__dirname,'..');
 const extension=path.join(root,'extension');
-const runtime=['manifest.json','background.js','api.js','page.js','privacy.js','youtube.js','exports.js','popup.js','popup.html','popup.css','icon16.png','icon48.png','icon128.png','LICENSE'];
+const runtime=['manifest.json','background.js','api.js','page.js','privacy.js','youtube.js','products.js','exports.js','popup.js','popup.html','popup.css','icon16.png','icon48.png','icon128.png','LICENSE'];
 const assets=fs.readdirSync(path.join(extension,'assets')).map(name=>'assets/'+name);
 (async()=>{
  const ctx={Blob,TextEncoder,Uint8Array,DataView};vm.createContext(ctx);

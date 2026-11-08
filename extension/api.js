@@ -784,10 +784,37 @@ window.CaptureAPI = (function() {
     }
 
 
-    function captureTranscript(tab, callback, errback, autoRedact) {
+    function hasProductDetails(tab, callback) {
+        chrome.scripting.executeScript({target:{tabId:tab.id},func:function(){
+            return !!document.querySelector('[itemtype$="/Product"],[itemtype$="/ProductGroup"],meta[property="og:type"][content="product"]') ||
+                Array.from(document.querySelectorAll('script[type="application/ld+json"]')).some(function(el){return /"@type"\s*:\s*(?:"(?:Product|ProductGroup)"|\[[^\]]*"Product)/.test(el.textContent.slice(0,2000000));});
+        }},function(results){callback(!chrome.runtime.lastError && !!(results && results[0] && results[0].result));});
+    }
+
+    function captureProductDetails(tab, callback, errback, autoRedact) {
+        chrome.scripting.executeScript({target:{tabId:tab.id},world:'MAIN',func:SkimProducts.extract}, function(results) {
+            var result=results && results[0] && results[0].result;
+            if(chrome.runtime.lastError || !result || result.error) {errback(result && result.error || 'Product details could not be read.');return;}
+            try {
+                if(new URL(result.pageUrl).href.split('#')[0]!==new URL(tab.url).href.split('#')[0])throw new Error('Page changed since capture. Capture the current page again before exporting.');
+                if(typeof result.title!=='string' || !result.coverage || !Array.isArray(result.coverage.warnings))throw new Error('Product data has an unsupported format.');
+                function clean(value) {
+                    if(typeof value==='string')return autoRedact !== false?SkimPrivacy.redactText(value):value;
+                    if(Array.isArray(value))return value.map(clean);
+                    if(value && typeof value==='object')return Object.fromEntries(Object.entries(value).map(function(entry){return [entry[0],clean(entry[1])];}));
+                    return value;
+                }
+                var text=JSON.stringify(clean(result),null,2);
+                if(text.length>2000000)throw new Error('Product export exceeds 2 MB; capture a smaller product page.');
+                callback(text);
+            } catch(e) {errback(e.message || 'Product export failed.');}
+        });
+    }
+
+    function captureTranscript(tab, callback, errback, autoRedact, language) {
         chrome.scripting.executeScript({target:{tabId:tab.id}, files:['youtube.js']}, function() {
             if (chrome.runtime.lastError) {errback(chrome.runtime.lastError.message);return;}
-            chrome.scripting.executeScript({target:{tabId:tab.id}, func:async function(){return await skimYouTubeTranscript();}}, function(results) {
+            chrome.scripting.executeScript({target:{tabId:tab.id}, func:async function(preferred){return await skimYouTubeTranscript(preferred);}, args:[language || '']}, function(results) {
                 var result=results && results[0] && results[0].result;
                 if(chrome.runtime.lastError || !result || result.error) {errback(result && result.error || 'Transcript extraction failed');return;}
                 var text=autoRedact !== false ? SkimPrivacy.redactText(result.text) : result.text;
@@ -797,6 +824,8 @@ window.CaptureAPI = (function() {
     }
 
     return {
+        hasProductDetails: hasProductDetails,
+        captureProductDetails: captureProductDetails,
         captureTranscript: captureTranscript,
         captureToBlobs: captureToBlobs,
         captureToFiles: captureToFiles,
