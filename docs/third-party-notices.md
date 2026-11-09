@@ -12,3 +12,7 @@ Skim is an independent derivative of Peter Coles' [full-page capture extension](
 The font and runtime icons are bundled locally. Their pinned source revisions are in [asset sources](../extension/assets/SOURCES.md).
 
 Playwright is a development dependency. Its license ships with the installed package, which is excluded from the extension ZIP.
+
+## Cogent Browser Agent
+
+Product extraction adapts Cogent’s embedded JSON parser, lazy image URL collection, image scoring and DOM extraction patterns. Copyright 2026 Kian and Cognesia Inc.; [MIT license](../extension/assets/Cogent.LICENSE.txt). The browser agent, provider integration and broader permissions are not included.

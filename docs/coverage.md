@@ -9,7 +9,7 @@ Skim captures browser-readable context from the current page. A capture is not a
 | Page code | Markup, accessible styles, computed layout, and asset references | Inaccessible stylesheets and application source code are not recovered. |
 | Screenshots | A full page or its main scroll pane | Fixed overlays are hidden. Changing layouts can fail. Large images use parts. |
 | YouTube | Native transcript text, timestamps, links, and an optional exact language label | Some videos, profiles or layouts provide no readable transcript or language picker. |
-| Product JSON | Product metadata, known Alibaba fields and captured page context | Partial export; missing fields are listed. Login, CAPTCHA and unloaded variants remain limits. Image links only. |
+| Product JSON | Product metadata, known Alibaba fields, Cogent DOM/media fallbacks and captured page context | Partial export; missing fields are listed. Login, CAPTCHA and unloaded variants remain limits. Image links only. |
 
 Chrome blocks capture on internal pages, its Web Store, and some documents. Closed shadow roots, inaccessible frames, and text drawn in images or canvas can be unreadable.
 

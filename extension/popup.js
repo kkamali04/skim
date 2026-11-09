@@ -503,7 +503,7 @@ function startCopy() {
 
 function isProductSite() {
   var host=getHostname(currentTab && currentTab.url || '');
-  return /(^|\.)(alibaba\.com|aliexpress\.(com|us)|temu\.com|amazon\.(com|co\.uk)|ebay\.com|etsy\.com|walmart\.com|myshopify\.com)$/.test(host);
+  return /(^|\.)(alibaba\.com|aliexpress\.(com|us)|temu\.com|amazon\.(com|co\.uk)|ebay\.com|etsy\.com|walmart\.com|myshopify\.com|1688\.com|taobao\.com|tmall\.(com|hk)|dhgate\.com|made-in-china\.com|globalsources\.com|jd\.com)$/.test(host);
 }
 function saveProductDetails() {
   var button=$('btn-product');button.disabled=true;

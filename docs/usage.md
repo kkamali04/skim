@@ -39,9 +39,9 @@ The result shows known capture warnings. **Partial capture** names a detected ga
 
 ## Save product context
 
-On recognized shopping pages, or pages with product metadata, **Save product details · JSON** downloads available prices, variants, specifications, supplier details and image links alongside the captured page context. Redaction follows your setting. The file includes missing fields and coverage warnings.
+On recognized shopping pages, or pages with product metadata, **Save product details · JSON** downloads available prices, variants, specifications, supplier details, image/video links and visible review candidates alongside the captured page context. Redaction follows your setting. The file includes missing fields and coverage warnings.
 
-This is a partial snapshot of the open product page, not a catalog crawl or a promise of every variant or review. Image files are not downloaded. Alibaba bootstrap data and standard Product metadata are supported; AliExpress and Temu require readable product data and may block access or require login. Their full-detail exports remain unverified.
+This is a partial snapshot of the open product page, not a catalog crawl or a promise of every variant or review. Image files are not downloaded. DOM fallbacks can include related assets; inspect candidate records before using them. Alibaba bootstrap data and standard Product metadata are supported; AliExpress and Temu require readable product data and may block access or require login. Their full-detail exports remain unverified.
 
 ## Choose what to retain
 

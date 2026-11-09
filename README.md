@@ -12,12 +12,15 @@ Skim saves you from copying a page piece by piece. Click Skim, then paste the ca
 
 | You want to… | Give your agent the context and ask… |
 | --- | --- |
-| Understand an article or product page | "Compare the options and explain the tradeoffs." |
+| Understand an article | "Compare the options and explain the tradeoffs." |
+| Research a product | "Compare suppliers using these exported product details." |
 | Work through a form | "Explain these fields and the available choices." |
 | Fix or rebuild a web interface | "Use this page code and screenshot as a reference." |
 | Learn from a video | "Turn this transcript into notes with timestamps." |
 
 Page text gives your agent details and links. A screenshot shows the layout. Page code supplies markup and styles. Available YouTube transcripts let you work with the video's words.
+
+Product pages can also export available details as JSON. Capture status flags known gaps; transcript language is optional in Settings.
 
 You choose what to capture and where to paste it. No account or AI API key is required.
 
@@ -36,3 +39,5 @@ Review the capture before sharing it. Redaction is best effort, and hidden or re
 Developing Skim? See [Contributing](CONTRIBUTING.md), [Testing](docs/testing.md), and the [changelog](docs/changelog.md).
 
 Independent derivative of Peter Coles' [full-page capture extension](https://github.com/mrcoles/full-page-screen-capture-chrome-extension). [MIT license](LICENSE) · [Third-party notices](docs/third-party-notices.md).
+
+Product extraction adapts [Cogent Browser Agent helpers](extension/assets/Cogent.LICENSE.txt) under MIT.

@@ -2,6 +2,8 @@
 
 ## 1.2.1 release candidate
 
+- Reuse Cogent’s embedded product JSON parser, lazy image sources, image scoring and DOM extraction patterns. Add specification-table, video-link and visible-review fallbacks without adding agent permissions. Preserve MIT attribution.
+
 - Show capture limits and partial-result reasons. Add an optional native transcript-language preference with explicit unavailable-track errors.
 - Add contextual product JSON downloads with redaction, captured page context, field provenance and missing-data warnings. Read standard Product metadata and whitelisted Alibaba product fields; do not claim complete AliExpress or Temu support.
 

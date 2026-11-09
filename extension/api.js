@@ -786,7 +786,7 @@ window.CaptureAPI = (function() {
 
     function hasProductDetails(tab, callback) {
         chrome.scripting.executeScript({target:{tabId:tab.id},func:function(){
-            return !!document.querySelector('[itemtype$="/Product"],[itemtype$="/ProductGroup"],meta[property="og:type"][content="product"]') ||
+            return /\/products?\/[^/]+/i.test(location.pathname) && !!document.querySelector('h1') && !!document.querySelector('.price,[class*="gallery"] img') || !!document.querySelector('[itemtype$="/Product"],[itemtype$="/ProductGroup"],meta[property="og:type"][content="product"]') ||
                 Array.from(document.querySelectorAll('script[type="application/ld+json"]')).some(function(el){return /"@type"\s*:\s*(?:"(?:Product|ProductGroup)"|\[[^\]]*"Product)/.test(el.textContent.slice(0,2000000));});
         }},function(results){callback(!chrome.runtime.lastError && !!(results && results[0] && results[0].result));});
     }
